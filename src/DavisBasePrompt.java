@@ -24,7 +24,7 @@ public class DavisBasePrompt {
 	/* This can be changed to whatever you like */
 	static String prompt = "davisql> ";
 	static String version = "v1.0b(example)";
-	static String copyright = "Â©2019 Chris Irwin Davis";
+	static String copyright = " Chris Irwin Davis";
 	static boolean isExit = false;
 	/*
 	 * Page size for alll files is 512 bytes by default.
