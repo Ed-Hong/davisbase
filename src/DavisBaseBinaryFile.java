@@ -210,4 +210,54 @@ public class DavisBaseBinaryFile {
       }
    }
 
+
+   //test creat table by hua 14/07
+   public static void test() {
+      System.out.println("1");
+
+      try {
+                  
+         RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile("data/test.tbl", "rw");
+         Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, 0, -1, -1);
+         Page page = new Page(davisbaseTablesCatalog,0);
+
+         page.addTableRow(Arrays.asList(new Attribute[]{
+                  new Attribute(DataType.TEXT,"test"),//DavisBaseBinaryFile.tablesTable->test
+                  new Attribute(DataType.INT,"2"),
+                  new Attribute(DataType.SMALLINT,"0"),
+                  new Attribute(DataType.SMALLINT,"0")
+         })); 
+         davisbaseTablesCatalog.close();
+      }
+      catch(IOException ex){
+         System.out.println("Cannot seek to start content of the file :");
+      }
+      
+     
+   }
+   public static void test1() {
+      try {
+                  
+         RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile("data/test.tbl", "rw");
+         //Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, 0, -1, -1);
+         Page page = new Page(davisbaseTablesCatalog,0);
+
+         page.addTableRow(Arrays.asList(new Attribute[]{
+                  new Attribute(DataType.TEXT,"test"),//DavisBaseBinaryFile.tablesTable->test
+                  new Attribute(DataType.INT,"2"),
+                  new Attribute(DataType.SMALLINT,"0"),
+                  new Attribute(DataType.SMALLINT,"0")
+         })); 
+         davisbaseTablesCatalog.close();
+      }
+      catch(IOException ex){
+         System.out.println("Cannot seek to start content of the file :");
+      }
+      
+     
+   }
+   //====end test
+
 }
+
+

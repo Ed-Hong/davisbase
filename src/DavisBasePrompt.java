@@ -55,8 +55,19 @@ public class DavisBasePrompt {
             !new File(dataDir,DavisBaseBinaryFile.columnsTable+".tbl").exists())
                 DavisBaseBinaryFile.initializeDataStore();
     
-    
-    
+		//test creat table by hua 14/07
+		//if(1){
+		if(!new File(dataDir,"test.tbl").exists()){
+			System.out.println("creating test.tbl...");
+			DavisBaseBinaryFile.test();
+		}
+		else{
+			System.out.println("update test.tbl...");
+			DavisBaseBinaryFile.test1();
+		}
+		//===end test
+
+
         /* Variable to collect user input from the prompt */
 		String userCommand = ""; 
 
@@ -244,8 +255,8 @@ public class DavisBasePrompt {
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(createTableString.split(" ")));
 
 		/* Define table file name */
-		String tableFileName = createTableTokens.get(2) + ".tbl";
-
+		
+		
 		/* YOUR CODE GOES HERE */
 		
 		/*  Code to create a .tbl file to contain table data */
@@ -253,11 +264,58 @@ public class DavisBasePrompt {
 			/*  Create RandomAccessFile tableFile in read-write mode.
 			 *  Note that this doesn't create the table file in the correct directory structure
 			 */
-			RandomAccessFile tableFile = new RandomAccessFile(tableFileName, "rw");
+			//System.out.println(createTableTokens.size());
+			//for(int i = 0;i<createTableTokens.size();i++)
+				//System.out.println(createTableTokens.get(i));
+			
+			if(!createTableTokens.get(1).equals("table")||!createTableTokens.get(3).equals("(")||!createTableTokens.get(createTableTokens.size()-1).equals(")")){
+				System.out.println("error");
+				//System.out.println(createTableTokens.get(1));
+				//System.out.println(createTableTokens.get(3));
+				//System.out.println(createTableTokens.get(createTableTokens.size()-1));
+				return;
+			}
+
+			String tableFileName = createTableTokens.get(2) + ".tbl";
+			RandomAccessFile tableFile = new RandomAccessFile("data/"+tableFileName, "rw");
             Page.addNewPage(tableFile, PageType.LEAF, 0, 0, -1, -1);
             tableFile.close();
-            
+			
+			//update sys file
+			System.out.println("table");
+			RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile("data/davisbase_tables.tbl", "rw");
+			Page page = new Page(davisbaseTablesCatalog,0);
 
+			page.addTableRow(Arrays.asList(new Attribute[]{
+					new Attribute(DataType.TEXT,tableFileName),//DavisBaseBinaryFile.tablesTable->test
+					new Attribute(DataType.INT,"0"),
+					new Attribute(DataType.SMALLINT,"0"),
+					new Attribute(DataType.SMALLINT,"0")
+			})); 
+			davisbaseTablesCatalog.close();
+			//======
+			System.out.println("col");
+			//RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/"+DavisBaseBinaryFile.columnsTable+".tbl", "rw");
+			RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/test.tbl", "rw");
+            Page page1 = new Page(davisbaseColumnsCatalog,0);
+			
+			
+			List<Attribute> list = new ArrayList<Attribute> ();
+			for(int i = 4,j = 1;i<createTableTokens.size();i+=3,j++){
+
+
+				page1.addTableRow(Arrays.asList(new Attribute[]{
+					new Attribute(DataType.TEXT,tableFileName),
+					new Attribute(DataType.TEXT,createTableTokens.get(i)),
+					new Attribute(DataType.TEXT,createTableTokens.get(i+1)),
+					new Attribute(DataType.SMALLINT,String.valueOf(j)),
+					new Attribute(DataType.TEXT,"NO")
+		   		})); 
+			}
+				
+			davisbaseColumnsCatalog.close();
+
+            
 		}
 		catch(Exception e) {
 			System.out.println(e);
