@@ -3,13 +3,6 @@
 
 # Build
 cd src
-javac -g Attribute.java
-javac -g Condition.java
-javac -g DataType.java
-javac -g Page.java
-javac -g PageType.java
-javac -g TableRecord.java
-javac -g DavisBaseBinaryFile.java
 javac -g DavisBasePrompt.java
 mv *.class ../bin/
 

@@ -1,6 +1,7 @@
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.SortedMap;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class DavisBasePrompt {
 	/* This can be changed to whatever you like */
 	static String prompt = "davisql> ";
 	static String version = "v1.0b(example)";
-	static String copyright = "©2019 Chris Irwin Davis";
+	static String copyright = "�2019 Chris Irwin Davis";
 	static boolean isExit = false;
 	/*
 	 * Page size for alll files is 512 bytes by default.
@@ -66,7 +67,7 @@ public class DavisBasePrompt {
 			userCommand = scanner.next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
 			// userCommand = userCommand.replace("\n", "").replace("\r", "");
 			parseUserCommand(userCommand);
-		}
+		}  
 		System.out.println("Exiting...");
     }
     
@@ -161,14 +162,12 @@ public class DavisBasePrompt {
 		*/
 		switch (commandTokens.get(0)) {
 			case "show":
-				System.out.println("CASE: SELECT");
-				if(commandTokens.get(1) == "tables")
-					parseUserCommand("SELECT * FROM davisbase_tables");			
+				if(commandTokens.get(1).equals("tables"))
+					parseUserCommand("select * from davisbase_tables");			
 				else
 					System.out.println("I didn't understand the command: \"" + userCommand + "\"");
 				break;
 			case "select":
-				System.out.println("CASE: SELECT");
 				parseQuery(userCommand);
 				break;
 			case "drop":
@@ -218,24 +217,89 @@ public class DavisBasePrompt {
 	 *  @param queryString is a String of the user input
 	 */
 	public static void parseQuery(String queryString) {
-		String table_name;
+		String table_name ="";
 		List<String> column_names = new ArrayList<String>();
 		
-
 		//Get table and column names for the select
 		ArrayList<String> queryTableTokens = new ArrayList<String>(Arrays.asList(queryString.split(" ")));
+		int i=0;
 		
-		for(int i=1;i<queryTableTokens.size();i++)
+		for(i=1;i<queryTableTokens.size();i++)
 		{
+         if(queryTableTokens.get(i).equals("from"))
+			{
+				++i;
+				table_name = queryTableTokens.get(i);
+				break;
+			}
 			if(!queryTableTokens.get(i).equals("*"))
 			{
 				column_names.add(queryTableTokens.get(i));
 			}
-			if(queryTableTokens.get(i).equals("FROM"))
+			
+		}
+
+		++i;
+
+		Condition condition = null;
+
+		if(queryTableTokens.size() > i)
+		{
+			condition = new Condition();
+			
+		
+         if(queryTableTokens.get(i).equals("where"))
 			{
-				table_name = queryTableTokens.get(i+1);
-				break;
+				i++;
 			}
+         if(queryTableTokens.get(i).equals("not"))
+			{
+				i++;condition.setNegation(true);
+			}
+
+			condition.setColumName(queryTableTokens.get(i));
+			condition.setOperator(queryTableTokens.get(i+1));
+        	condition.setConditionValue(queryTableTokens.get(i+2));
+		}
+
+		TableMetaData tableMetaData = new TableMetaData(table_name);
+
+		if(tableMetaData.tableExists
+			&& tableMetaData.columnExists(table_name,column_names))
+		{
+
+			if(condition != null)
+         {
+			 if(tableMetaData.columnExists(table_name,
+				 new ArrayList<String>(Arrays.asList(condition.columnName))))
+				{
+					condition.columnOrdinal = tableMetaData.columnNames.indexOf(condition.columnName);
+					condition.dataType = tableMetaData.columnNameAttrs.get(condition.columnOrdinal).dataType;
+				}
+				else{
+					System.out.println("Cannot find table/columns in catalog files");
+					return;
+				}
+         }
+
+
+			if(column_names.size() == 0)
+			{
+				column_names = tableMetaData.columnNames;
+			}
+			try {		
+         
+				RandomAccessFile tableFile = new RandomAccessFile(DavisBaseBinaryFile.getDataFilePath(table_name), "r");
+				DavisBaseBinaryFile tableBinaryFile = new DavisBaseBinaryFile(tableFile);
+				tableBinaryFile.selectRecords(tableMetaData,column_names,condition,false);
+				tableFile.close();
+			}
+			catch(IOException exception){
+				System.out.println("Error selecting columns from table");
+			}
+		}
+		 else{
+			System.out.println("Cannot find table/columns in catalog files");
 		}
 
 	}
@@ -276,10 +340,8 @@ public class DavisBasePrompt {
 			 *  Note that this doesn't create the table file in the correct directory structure
 			 */
 			RandomAccessFile tableFile = new RandomAccessFile(tableFileName, "rw");
-            Page.addNewPage(tableFile, PageType.LEAF, 0, 0, -1, -1);
-            tableFile.close();
-            
-
+            Page.addNewPage(tableFile, PageType.LEAF, 0, -1, -1);
+            tableFile.close();          
 		}
 		catch(Exception e) {
 			System.out.println(e);
