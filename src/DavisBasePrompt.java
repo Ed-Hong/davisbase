@@ -24,7 +24,7 @@ public class DavisBasePrompt {
 	/* This can be changed to whatever you like */
 	static String prompt = "davisql> ";
 	static String version = "v1.0b(example)";
-	static String copyright = "Â©2019 Chris Irwin Davis";
+	static String copyright = "©2019 Chris Irwin Davis";
 	static boolean isExit = false;
 	/*
 	 * Page size for alll files is 512 bytes by default.
@@ -115,8 +115,6 @@ public class DavisBasePrompt {
 			out.println("All commands below are case insensitive\n");
 			out.println("SHOW TABLES;");
 			out.println("\tDisplay the names of all tables.\n");
-			//printCmd("SELECT * FROM <table_name>;");
-			//printDef("Display all records in the table <table_name>.");
 			out.println("SELECT <column_list> FROM <table_name> [WHERE <condition>];");
 			out.println("\tDisplay table records whose optional <condition>");
 			out.println("\tis <column_name> = <value>.\n");
@@ -162,6 +160,13 @@ public class DavisBasePrompt {
 		*  You will want to rewrite this method to interpret more complex commands. 
 		*/
 		switch (commandTokens.get(0)) {
+			case "show":
+				System.out.println("CASE: SELECT");
+				if(commandTokens.get(1) == "tables")
+					parseUserCommand("SELECT * FROM davisbase_tables");			
+				else
+					System.out.println("I didn't understand the command: \"" + userCommand + "\"");
+				break;
 			case "select":
 				System.out.println("CASE: SELECT");
 				parseQuery(userCommand);
@@ -213,8 +218,26 @@ public class DavisBasePrompt {
 	 *  @param queryString is a String of the user input
 	 */
 	public static void parseQuery(String queryString) {
-		System.out.println("STUB: This is the parseQuery method");
-		System.out.println("\tParsing the string:\"" + queryString + "\"");
+		String table_name;
+		List<String> column_names = new ArrayList<String>();
+		
+
+		//Get table and column names for the select
+		ArrayList<String> queryTableTokens = new ArrayList<String>(Arrays.asList(queryString.split(" ")));
+		
+		for(int i=1;i<queryTableTokens.size();i++)
+		{
+			if(!queryTableTokens.get(i).equals("*"))
+			{
+				column_names.add(queryTableTokens.get(i));
+			}
+			if(queryTableTokens.get(i).equals("FROM"))
+			{
+				table_name = queryTableTokens.get(i+1);
+				break;
+			}
+		}
+
 	}
 
 	/**
@@ -232,7 +255,6 @@ public class DavisBasePrompt {
     }
 
 
-	
 	/**
 	 *  Stub method for creating new tables
 	 *  @param queryString is a String of the user input

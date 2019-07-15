@@ -4,6 +4,7 @@
 # Build
 cd src
 javac -g Attribute.java
+javac -g Condition.java
 javac -g DataType.java
 javac -g Page.java
 javac -g PageType.java
