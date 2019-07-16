@@ -284,7 +284,7 @@ public class DavisBaseBinaryFile {
       try {
                   
          RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile("data/test.tbl", "rw");
-         Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, 0, -1, -1);
+         Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, -1, -1);
          Page page = new Page(davisbaseTablesCatalog,0);
 
          page.addTableRow(Arrays.asList(new Attribute[]{

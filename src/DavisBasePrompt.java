@@ -367,7 +367,7 @@ public class DavisBasePrompt {
 
 			String tableFileName = createTableTokens.get(2) + ".tbl";
 			RandomAccessFile tableFile = new RandomAccessFile("data/"+tableFileName, "rw");
-            Page.addNewPage(tableFile, PageType.LEAF, 0, 0, -1, -1);
+            Page.addNewPage(tableFile, PageType.LEAF, 0, -1, -1);
             tableFile.close();
 			
 			//update sys file
