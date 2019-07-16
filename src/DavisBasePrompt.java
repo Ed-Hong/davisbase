@@ -56,15 +56,17 @@ public class DavisBasePrompt {
                 DavisBaseBinaryFile.initializeDataStore();
     
 		//test creat table by hua 14/07
-		//if(1){
-		if(!new File(dataDir,"test.tbl").exists()){
+		/*if(!new File(dataDir,"test.tbl").exists()){
 			System.out.println("creating test.tbl...");
 			DavisBaseBinaryFile.test();
 		}
 		else{
 			System.out.println("update test.tbl...");
 			DavisBaseBinaryFile.test1();
-		}
+		}*/
+
+	
+		//System.out.println(page1.records);
 		//===end test
 
 
@@ -294,7 +296,7 @@ public class DavisBasePrompt {
 			})); 
 			davisbaseTablesCatalog.close();
 			//======
-			System.out.println("col");
+			//System.out.println("col");
 			//RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/"+DavisBaseBinaryFile.columnsTable+".tbl", "rw");
 			RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/test.tbl", "rw");
             Page page1 = new Page(davisbaseColumnsCatalog,0);
@@ -314,7 +316,7 @@ public class DavisBasePrompt {
 			}
 				
 			davisbaseColumnsCatalog.close();
-
+			
             
 		}
 		catch(Exception e) {
