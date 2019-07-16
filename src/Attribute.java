@@ -23,7 +23,7 @@ public class Attribute
          case NULL:
             this.fieldValue= "NULL"; break;
         case TINYINT: this.fieldValue = Byte.valueOf(ByteConvertor.byteFromByteArray(fieldValuebyte)).toString(); break;
-        case SMALLINT: this.fieldValue = Short.valueOf(ByteConvertor.byteFromByteArray(fieldValuebyte)).toString(); break;
+        case SMALLINT: this.fieldValue = Short.valueOf(ByteConvertor.shortFromByteArray(fieldValuebyte)).toString(); break;
         case INT: this.fieldValue = Integer.valueOf(ByteConvertor.intFromByteArray(fieldValuebyte)).toString(); break;
         case BIGINT: this.fieldValue =  Long.valueOf(ByteConvertor.longFromByteArray(fieldValuebyte)).toString(); break;
         case FLOAT: this.fieldValue = Float.valueOf(ByteConvertor.floatFromByteArray(fieldValuebyte)).toString(); break;

@@ -183,7 +183,8 @@ public class DavisBaseBinaryFile {
          RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile(
                getDataFilePath(DavisBaseBinaryFile.tablesTable), "rw");
          Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, -1, -1);
-         Page page = new Page(davisbaseColumnsCatalog,currentPageNo);
+
+         Page page = new Page(davisbaseTablesCatalog,currentPageNo);
 
          currentPageNo = page.addTableRow(Arrays.asList(new Attribute[] { 
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.tablesTable),
@@ -193,8 +194,10 @@ public class DavisBaseBinaryFile {
                }));
 
         currentPageNo = page.addTableRow(Arrays.asList(new Attribute[] {
-               new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable), new Attribute(DataType.INT, "9"),
-               new Attribute(DataType.SMALLINT, "0"), new Attribute(DataType.SMALLINT, "0") }));
+               new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
+                new Attribute(DataType.INT, "9"),
+               new Attribute(DataType.SMALLINT, "0"),
+                new Attribute(DataType.SMALLINT, "0") }));
 
          davisbaseTablesCatalog.close();
       } catch (Exception e) {
