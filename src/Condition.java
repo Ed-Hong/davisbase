@@ -1,0 +1,85 @@
+
+/* Condition class 
+
+This class handles logic for where clause*/
+public class Condition
+{
+    String columnName;
+    OperatorType operator;
+    String comparisonValue;
+    boolean negation;
+    public int columnOrdinal;
+    public DataType dataType;
+    
+    //Converts the operator string from the user input to OperatorType
+    public static OperatorType getOperatorType(String strOperator){
+        switch(strOperator){
+            case ">": return OperatorType.GREATERTHAN;
+            case "<": return OperatorType.LESSTHAN;
+            case "=": return OperatorType.EQUALTO;
+            case ">=": return OperatorType.GREATERTHANOREQUAL;
+            case "<=": return OperatorType.LESSTHANOREQUAL;
+            case "<>": return OperatorType.NOTEQUAL;
+            default:
+                System.out.println("Invalid operator \"" + strOperator + "\"");
+            return OperatorType.INVALID;
+        }
+    }
+
+    //Does comparison on currentvalue with the comparison value
+    public boolean checkCondition(String currentValue){
+        OperatorType operation = getOperation();
+
+        switch(operation)
+        {
+            case LESSTHANOREQUAL: return currentValue.toLowerCase().compareTo(comparisonValue) <=0;
+            case GREATERTHANOREQUAL: return currentValue.toLowerCase().compareTo(comparisonValue) >=0;
+            case NOTEQUAL:  return currentValue.toLowerCase().compareTo(comparisonValue) !=0;
+            case LESSTHAN:  return currentValue.toLowerCase().compareTo(comparisonValue) <0;
+            case GREATERTHAN:  return currentValue.toLowerCase().compareTo(comparisonValue) >0;
+            case EQUALTO:  return currentValue.toLowerCase().compareTo(comparisonValue) ==0;
+            default: return false;
+            
+        }
+    }
+
+    public void setConditionValue(String conditionValue){
+        this.comparisonValue = conditionValue;
+         this.comparisonValue = comparisonValue.replace("'","");
+        this.comparisonValue = comparisonValue.replace("\"","");
+
+    }
+    
+    public void setColumName(String columnName){
+        this.columnName = columnName;
+    }
+    
+    public void setOperator(String operator){
+        this.operator =  getOperatorType(operator);
+    }
+
+    public void setNegation(boolean negate){
+        this.negation = negate;
+    }
+
+    private OperatorType getOperation(){
+        if(!negation) return this.operator;
+        else return negateOperator();
+    }
+
+    //In case of NOT operator, invert the operator
+    private OperatorType negateOperator(){
+        switch(this.operator){
+            case LESSTHANOREQUAL: return OperatorType.GREATERTHAN;
+            case GREATERTHANOREQUAL: return OperatorType.LESSTHAN;
+            case NOTEQUAL: return OperatorType.EQUALTO;
+            case LESSTHAN: return OperatorType.GREATERTHANOREQUAL;
+            case GREATERTHAN: return OperatorType.LESSTHANOREQUAL;
+            case EQUALTO: return OperatorType.NOTEQUAL;
+            default:
+                System.out.println("Invalid operator \"" + this.operator + "\"");
+            return OperatorType.INVALID;
+        }
+    }
+}
+

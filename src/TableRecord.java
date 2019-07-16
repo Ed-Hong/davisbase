@@ -1,5 +1,7 @@
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.util.List;
+
+import java.util.Arrays;
+import java.util.ArrayList;
 
 //This class contains helper methods for converting the table record data (header and body) into byte array
 public class TableRecord
@@ -7,50 +9,32 @@ public class TableRecord
     public int rowId;
     public Byte[] colDatatypes;
     public Byte[] recordBody;
+    private List<Attribute> attributes;
     
 
     TableRecord(int rowId, byte[] colDatatypes, byte[] recordBody)
     {
         this.rowId = rowId;
-        this.recordBody= byteToBytes(recordBody);
-        this.colDatatypes = byteToBytes(colDatatypes);
+        this.recordBody= ByteConvertor.byteToBytes(recordBody);
+        this.colDatatypes = ByteConvertor.byteToBytes(colDatatypes);
+        setAttributes();
     }
 
-    public static Byte[] intToBytes(int data) {
-		return byteToBytes(ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN).putInt(data).array());
-	}
-
-    public static Byte[] byteToBytes(final byte[] data){
-        Byte[] result= new Byte[data.length];
-        for(int i=0;i<data.length;i++)
-            result[i] = data[i];
-        return result;
-    }
-
-    public static Byte[] shortToBytes(final short data)
+    public List<Attribute> getAttributes()
     {
-        return byteToBytes(ByteBuffer.allocate(Short.BYTES).order(ByteOrder.BIG_ENDIAN).putShort(data).array());
+        return attributes;
     }
 
-    public static Byte[] longToBytes(final long data) {
-		return byteToBytes(ByteBuffer.allocate(Long.BYTES).putLong(data).array());
-	}
-
-
-    public static Byte[] floatToBytes(final float data) {
-		return byteToBytes(ByteBuffer.allocate(Float.BYTES).putFloat(data).array());
-    }
-    
-
-    public static Byte[] doubleToBytes(final double data) {
-		return byteToBytes(ByteBuffer.allocate(Double.BYTES).putDouble(data).array());
-    }
-
-    public static byte[] Bytestobytes(final Byte[] data){
-        byte[] result= new byte[data.length];
-        for(int i=0;i<data.length;i++)
-            result[i] = data[i];
-        return result;
+    private void setAttributes()
+    {
+        attributes = new ArrayList<>();
+        int pointer = 0;
+        for(Byte colDataType : colDatatypes)
+        {
+             byte[] fieldValue = ByteConvertor.Bytestobytes(Arrays.copyOfRange(recordBody,pointer, pointer + DataType.getLength(colDataType)));
+             attributes.add(new Attribute(DataType.get(colDataType), fieldValue));
+                    pointer =  pointer + DataType.getLength(colDataType);
+        }
     }
     
 }

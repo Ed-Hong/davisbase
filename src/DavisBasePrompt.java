@@ -1,6 +1,7 @@
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.SortedMap;
 import java.util.ArrayList;
@@ -24,7 +25,8 @@ public class DavisBasePrompt {
 	/* This can be changed to whatever you like */
 	static String prompt = "davisql> ";
 	static String version = "v1.0b(example)";
-	static String copyright = " Chris Irwin Davis";
+	static String copyright = "�2019 Chris Irwin Davis";
+
 	static boolean isExit = false;
 	/*
 	 * Page size for alll files is 512 bytes by default.
@@ -79,7 +81,7 @@ public class DavisBasePrompt {
 			userCommand = scanner.next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
 			// userCommand = userCommand.replace("\n", "").replace("\r", "");
 			parseUserCommand(userCommand);
-		}
+		}  
 		System.out.println("Exiting...");
     }
     
@@ -128,8 +130,6 @@ public class DavisBasePrompt {
 			out.println("All commands below are case insensitive\n");
 			out.println("SHOW TABLES;");
 			out.println("\tDisplay the names of all tables.\n");
-			//printCmd("SELECT * FROM <table_name>;");
-			//printDef("Display all records in the table <table_name>.");
 			out.println("SELECT <column_list> FROM <table_name> [WHERE <condition>];");
 			out.println("\tDisplay table records whose optional <condition>");
 			out.println("\tis <column_name> = <value>.\n");
@@ -175,8 +175,13 @@ public class DavisBasePrompt {
 		*  You will want to rewrite this method to interpret more complex commands. 
 		*/
 		switch (commandTokens.get(0)) {
+			case "show":
+				if(commandTokens.get(1).equals("tables"))
+					parseUserCommand("select * from davisbase_tables");			
+				else
+					System.out.println("I didn't understand the command: \"" + userCommand + "\"");
+				break;
 			case "select":
-				System.out.println("CASE: SELECT");
 				parseQuery(userCommand);
 				break;
 			case "drop":
@@ -226,8 +231,91 @@ public class DavisBasePrompt {
 	 *  @param queryString is a String of the user input
 	 */
 	public static void parseQuery(String queryString) {
-		System.out.println("STUB: This is the parseQuery method");
-		System.out.println("\tParsing the string:\"" + queryString + "\"");
+		String table_name ="";
+		List<String> column_names = new ArrayList<String>();
+		
+		//Get table and column names for the select
+		ArrayList<String> queryTableTokens = new ArrayList<String>(Arrays.asList(queryString.split(" ")));
+		int i=0;
+		
+		for(i=1;i<queryTableTokens.size();i++)
+		{
+         if(queryTableTokens.get(i).equals("from"))
+			{
+				++i;
+				table_name = queryTableTokens.get(i);
+				break;
+			}
+			if(!queryTableTokens.get(i).equals("*"))
+			{
+				column_names.add(queryTableTokens.get(i));
+			}
+			
+		}
+
+		++i;
+
+		Condition condition = null;
+
+		if(queryTableTokens.size() > i)
+		{
+			condition = new Condition();
+			
+		
+         if(queryTableTokens.get(i).equals("where"))
+			{
+				i++;
+			}
+         if(queryTableTokens.get(i).equals("not"))
+			{
+				i++;condition.setNegation(true);
+			}
+
+			condition.setColumName(queryTableTokens.get(i));
+			condition.setOperator(queryTableTokens.get(i+1));
+        	condition.setConditionValue(queryTableTokens.get(i+2));
+		}
+
+		TableMetaData tableMetaData = new TableMetaData(table_name);
+
+		if(tableMetaData.tableExists
+			&& tableMetaData.columnExists(table_name,column_names))
+		{
+
+			if(condition != null)
+         {
+			 if(tableMetaData.columnExists(table_name,
+				 new ArrayList<String>(Arrays.asList(condition.columnName))))
+				{
+					condition.columnOrdinal = tableMetaData.columnNames.indexOf(condition.columnName);
+					condition.dataType = tableMetaData.columnNameAttrs.get(condition.columnOrdinal).dataType;
+				}
+				else{
+					System.out.println("Cannot find table/columns in catalog files");
+					return;
+				}
+         }
+
+
+			if(column_names.size() == 0)
+			{
+				column_names = tableMetaData.columnNames;
+			}
+			try {		
+         
+				RandomAccessFile tableFile = new RandomAccessFile(DavisBaseBinaryFile.getDataFilePath(table_name), "r");
+				DavisBaseBinaryFile tableBinaryFile = new DavisBaseBinaryFile(tableFile);
+				tableBinaryFile.selectRecords(tableMetaData,column_names,condition,false);
+				tableFile.close();
+			}
+			catch(IOException exception){
+				System.out.println("Error selecting columns from table");
+			}
+		}
+		 else{
+			System.out.println("Cannot find table/columns in catalog files");
+		}
+
 	}
 
 	/**
@@ -245,7 +333,6 @@ public class DavisBasePrompt {
     }
 
 
-	
 	/**
 	 *  Stub method for creating new tables
 	 *  @param queryString is a String of the user input
@@ -316,8 +403,6 @@ public class DavisBasePrompt {
 			}
 				
 			davisbaseColumnsCatalog.close();
-			
-            
 		}
 		catch(Exception e) {
 			System.out.println(e);

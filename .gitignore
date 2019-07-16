@@ -2,4 +2,7 @@
 ## Java
 ##########################
 
-bin/
+bin/*
+*.class
+src/data
+*.tbl
