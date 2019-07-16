@@ -183,7 +183,6 @@ public class DavisBaseBinaryFile {
          RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile(
                getDataFilePath(DavisBaseBinaryFile.tablesTable), "rw");
          Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, -1, -1);
-
          Page page = new Page(davisbaseTablesCatalog,currentPageNo);
 
          currentPageNo = page.addTableRow(Arrays.asList(new Attribute[] { 
