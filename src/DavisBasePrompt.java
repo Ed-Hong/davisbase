@@ -25,7 +25,7 @@ public class DavisBasePrompt {
 	/* This can be changed to whatever you like */
 	static String prompt = "davisql> ";
 	static String version = "v1.0b(example)";
-	static String copyright = "�2019 Chris Irwin Davis";
+	static String copyright = "Chris Irwin Davis";
 
 	static boolean isExit = false;
 	/*
@@ -67,8 +67,6 @@ public class DavisBasePrompt {
 			DavisBaseBinaryFile.test1();
 		}*/
 
-	
-		//System.out.println(page1.records);
 		//===end test
 
 
@@ -328,8 +326,116 @@ public class DavisBasePrompt {
 	}
 
     public static void parseInsert(String queryString) {
-       System.out.println("STUB: This is the parseInsert method");
-        System.out.println("\tParsing the string:\"" + queryString + "\"");
+		//INSERT INTO davisbase_tables ( table_name ) VALUES ( testName );
+    	System.out.println("STUB: This is the parseInsert method");
+		System.out.println("\tParsing the string:\"" + queryString + "\"");
+		ArrayList<String> insertTokens = new ArrayList<String>(Arrays.asList(queryString.split(" ")));
+		
+		try{
+			RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/davisbase_columns.tbl", "rw");
+			Page page = new Page(davisbaseColumnsCatalog,0);
+			String table = insertTokens.get(2);
+			//System.out.println(table);
+			//0: table name 1:col name 2:data_type 3:position 4:nullable
+			
+			ArrayList<String> row = new	ArrayList<String>();
+			ArrayList<ArrayList<String>> domains = new	ArrayList<ArrayList<String>>();
+			for(int i = 0; i<page.records.size();i++){
+				//i start from 1 (0 is rowId)
+				//get target table
+				//System.out.println(page.records.get(i).getAttributes().get(0).fieldValue);
+				if(page.records.get(i).getAttributes().get(0).fieldValue.equals(table)){
+					//get ith col from davisbase_columns.tbl
+					row.add(page.records.get(i).getAttributes().get(1).fieldValue);
+					row.add(page.records.get(i).getAttributes().get(2).fieldValue);
+					row.add(page.records.get(i).getAttributes().get(3).fieldValue);
+					row.add(page.records.get(i).getAttributes().get(4).fieldValue);
+					//store domain and constrain in domains
+					domains.add(new ArrayList<String>(row));
+					row.clear();					
+					
+				}
+			}
+			/*
+			for(int j = 0; j<domains.size();j++){
+				System.out.println(domains.get(j).get(0));
+				System.out.println(domains.get(j).get(1));
+				System.out.println(domains.get(j).get(2));
+				System.out.println(domains.get(j).get(3));
+			}*/
+			
+			RandomAccessFile dstTable = new RandomAccessFile("data/"+ table +".tbl", "rw");
+			Page dstPage = new Page(dstTable,0);
+			
+			ArrayList<String> dstAttribute = new ArrayList<String>();
+			ArrayList<String> dstData = new	ArrayList<String>();
+			for(int i = 4,step = 0; i<insertTokens.size();i++){//step:0 get attribue 1: data
+				
+				String tmp = insertTokens.get(i);
+				if(tmp.equals("values")){
+					step++;
+					continue;
+				}
+				if(!tmp.equals(",")&& !tmp.equals("(") && !tmp.equals(")") && step ==0){
+					dstAttribute.add(tmp);
+				}
+				if(!tmp.equals(",")&& !tmp.equals("(") && !tmp.equals(")") && step ==1){
+					dstData.add(tmp);
+				}
+			}
+			boolean valid = true;
+			ArrayList<Attribute> record = new ArrayList<Attribute>();
+			if(dstAttribute.size() !=dstData.size()){
+				System.out.println("error");
+				return;
+			}
+
+			for(int i = 0; i<dstData.size();i++){
+				//System.out.println(dstAttribute.get(i));
+				//System.out.println(dstData.get(i));
+				valid = false;
+				for(int j = 0; j<domains.size();j++){
+					//column_name data_type ordinal_position is_nullable
+					DataType type = DataType.TEXT;
+					switch (domains.get(j).get(1)) {
+						case "INT":type = DataType.INT; break;
+						case "TEXT":type = DataType.TEXT; break;
+						case "SMALLINT":type = DataType.SMALLINT; break;
+
+						default:
+							break;
+					}
+					if(domains.get(j).get(0).equals(dstAttribute.get(i))){
+						record.add(new Attribute(type ,dstData.get(i)));
+						valid = true;
+					}
+					else if(domains.get(j).get(3).equals("yes")){
+						record.add(new Attribute(type ,"NULL"));
+						valid = true;
+					}/*
+					else{
+						System.out.println("attribute can not be null");
+						valid = false;
+						break;
+					}*/
+					
+				}
+				
+			}
+			
+			
+			//System.out.println(record.get(0).fieldValue);
+			//System.out.println(record.get(1).fieldValue);
+			if(valid)
+				dstPage.addTableRow(record);
+			else
+				System.out.println("attribute can not be null");
+			dstTable.close();
+			davisbaseColumnsCatalog.close();
+		}
+		catch(IOException ex){
+			System.out.println("Cannot seek to start content of the file :");
+		}
     }
 
 
@@ -338,36 +444,23 @@ public class DavisBasePrompt {
 	 *  @param queryString is a String of the user input
 	 */
 	public static void parseCreateTable(String createTableString) {
-		
+		//create table aaa ( id int , c2 int , c3 text );
 		System.out.println("STUB: Calling your method to create a table");
 		System.out.println("Parsing the string:\"" + createTableString + "\"");
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(createTableString.split(" ")));
 
-		/* Define table file name */
 		
-		
-		/* YOUR CODE GOES HERE */
-		
-		/*  Code to create a .tbl file to contain table data */
 		try {
-			/*  Create RandomAccessFile tableFile in read-write mode.
-			 *  Note that this doesn't create the table file in the correct directory structure
-			 */
-			//System.out.println(createTableTokens.size());
-			//for(int i = 0;i<createTableTokens.size();i++)
-				//System.out.println(createTableTokens.get(i));
-			
+		
+			 //table and () check
 			if(!createTableTokens.get(1).equals("table")||!createTableTokens.get(3).equals("(")||!createTableTokens.get(createTableTokens.size()-1).equals(")")){
 				System.out.println("error");
-				//System.out.println(createTableTokens.get(1));
-				//System.out.println(createTableTokens.get(3));
-				//System.out.println(createTableTokens.get(createTableTokens.size()-1));
 				return;
 			}
 
-			String tableFileName = createTableTokens.get(2) + ".tbl";
-			RandomAccessFile tableFile = new RandomAccessFile("data/"+tableFileName, "rw");
-            Page.addNewPage(tableFile, PageType.LEAF, 0, 0, -1, -1);
+			String tableFileName = createTableTokens.get(2);
+			RandomAccessFile tableFile = new RandomAccessFile("data/"+tableFileName+".tbl", "rw");
+            Page.addNewPage(tableFile, PageType.LEAF, 0, -1, -1);
             tableFile.close();
 			
 			//update sys file
@@ -383,9 +476,9 @@ public class DavisBasePrompt {
 			})); 
 			davisbaseTablesCatalog.close();
 			//======
-			//System.out.println("col");
-			//RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/"+DavisBaseBinaryFile.columnsTable+".tbl", "rw");
-			RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/test.tbl", "rw");
+			System.out.println("col");
+			RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/"+DavisBaseBinaryFile.columnsTable+".tbl", "rw");
+			//RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/test.tbl", "rw");
             Page page1 = new Page(davisbaseColumnsCatalog,0);
 			
 			
@@ -401,7 +494,7 @@ public class DavisBasePrompt {
 					new Attribute(DataType.TEXT,"NO")
 		   		})); 
 			}
-				
+
 			davisbaseColumnsCatalog.close();
 		}
 		catch(Exception e) {

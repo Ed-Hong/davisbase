@@ -183,7 +183,7 @@ public class DavisBaseBinaryFile {
          RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile(
                getDataFilePath(DavisBaseBinaryFile.tablesTable), "rw");
          Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, -1, -1);
-         Page page = new Page(davisbaseColumnsCatalog,currentPageNo);
+         Page page = new Page(davisbaseTablesCatalog,currentPageNo);
 
          currentPageNo = page.addTableRow(Arrays.asList(new Attribute[] { 
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.tablesTable),
@@ -211,7 +211,7 @@ public class DavisBaseBinaryFile {
          Page page = new Page(davisbaseColumnsCatalog, 0);
 
          int currentPageNo = 0;
-         
+         /*
          currentPageNo =  page.addTableRow(Arrays.asList(new Attribute[] { 
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.tablesTable),
                new Attribute(DataType.TEXT, "table_name"),
@@ -266,7 +266,7 @@ public class DavisBaseBinaryFile {
                Arrays.asList(new Attribute[] { new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
                      new Attribute(DataType.TEXT, "is_nullable"), new Attribute(DataType.TEXT, "TEXT"),
                      new Attribute(DataType.SMALLINT, "5"), new Attribute(DataType.TEXT, "NO") }));
-
+*/
          davisbaseColumnsCatalog.close();
       } catch (Exception e) {
          out.println("Unable to create the database_columns file");
@@ -282,7 +282,7 @@ public class DavisBaseBinaryFile {
       try {
                   
          RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile("data/test.tbl", "rw");
-         Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, 0, -1, -1);
+         Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0,  -1, -1);
          Page page = new Page(davisbaseTablesCatalog,0);
 
          page.addTableRow(Arrays.asList(new Attribute[]{
