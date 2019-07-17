@@ -12,6 +12,7 @@ import java.lang.Math.*;
 import java.util.Arrays;
 import static java.lang.System.out;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -23,10 +24,7 @@ public class DavisBaseBinaryFile {
    public static String columnsTable = "davisbase_columns";
    public static String tablesTable = "davisbase_tables";
 
-   public static String getDataFilePath(String tableName)
-   {
-      return "data/" + tableName + ".tbl";
-   }
+   public static boolean dataStoreInitialized = false;
 
    /* This static variable controls page size. */
    static int pageSizePower = 9;
@@ -39,12 +37,61 @@ public class DavisBaseBinaryFile {
       this.file = file;
    }
 
+   public void updateRecords(TableMetaData tablemetaData,Condition condition, List<String> columNames, List<Byte[]> newValues) throws IOException
+   {
+      int count = 0;
+      List<Integer> ordinalPostions = tablemetaData.getOrdinalPostions(columNames);
+
+      //map new values to column ordinal position
+      int k=0;
+      Map<Integer,Byte[]> newValueMap = new HashMap<>();
+
+      for(Byte[] newValue:newValues){
+         newValueMap.put(ordinalPostions.get(k++), newValue);
+      }
+
+      BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo);
+      List<Integer> leaves = new ArrayList<>();
+     
+      if(condition == null)
+      {
+         //brute force logic (as there are no index) traverse theough the tree and get all leaf pages
+         leaves = bPlusOneTree.getAllLeaves();
+      }
+      else{
+         //TODO find the leaf page numbers based on the condition and index files
+         //right now we are taking all the leaves
+         leaves = bPlusOneTree.getAllLeaves();
+      }
+
+      for(Integer pageNo : leaves)
+      {
+            Page page = new Page(file,pageNo);
+            for(TableRecord record : page.records)
+            {
+               if(condition!=null)
+               {
+                  if(!condition.checkCondition(record.getAttributes().get(condition.columnOrdinal).fieldValue))
+                     continue;
+               }
+               count++;
+               for(int i :newValueMap.keySet())
+               {
+                  page.updateRecord(record,i,newValueMap.get(i));
+               }
+             }
+      }
+      if(!tablemetaData.tableName.equals(tablesTable) && !tablemetaData.tableName.equals(columnsTable))
+          System.out.println(count+" record(s) updated!");
+
+   }
+
+
    public void selectRecords(TableMetaData tablemetaData, List<String> columNames, Condition condition, boolean showRowId) throws IOException{
    
    //The select order might be different from the table ordinal position
    List<Integer> ordinalPostions = tablemetaData.getOrdinalPostions(columNames);
 
-   System.out.println();
    System.out.println();
    
    List<Integer> printPosition = new ArrayList<>();
@@ -134,9 +181,11 @@ public class DavisBaseBinaryFile {
    public static int getRootPageNo(RandomAccessFile binaryfile) {
      int rootpage = 0;
       try {   
-         for (int i = 0; i < binaryfile.length() / binaryfile.length(); i++) {
+         for (int i = 0; i < binaryfile.length() / DavisBaseBinaryFile.pageSize; i++) {
             binaryfile.seek(i * DavisBaseBinaryFile.pageSize + 0x0A);
-            if (binaryfile.readInt() == -1) {
+            int a =binaryfile.readInt();
+          
+            if (a == -1) {
                return i;
             }
          }
@@ -181,18 +230,18 @@ public class DavisBaseBinaryFile {
          int currentPageNo = 0;
 
          RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile(
-               getDataFilePath(DavisBaseBinaryFile.tablesTable), "rw");
-         Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, -1, -1);
+               DavisBasePrompt.getTBLFilePath(tablesTable), "rw");
+         Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, -1, -1);
          Page page = new Page(davisbaseTablesCatalog,currentPageNo);
 
-         currentPageNo = page.addTableRow(Arrays.asList(new Attribute[] { 
+         currentPageNo = page.addTableRow(tablesTable,Arrays.asList(new Attribute[] { 
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.tablesTable),
                new Attribute(DataType.INT, "2"), 
                new Attribute(DataType.SMALLINT, "0"),
                new Attribute(DataType.SMALLINT, "0") 
                }));
 
-        currentPageNo = page.addTableRow(Arrays.asList(new Attribute[] {
+        currentPageNo = page.addTableRow(tablesTable,Arrays.asList(new Attribute[] {
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
                 new Attribute(DataType.INT, "9"),
                new Attribute(DataType.SMALLINT, "0"),
@@ -208,27 +257,27 @@ public class DavisBaseBinaryFile {
       /** Create davisbase_columns systems catalog */
       try {
          RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile(
-            getDataFilePath(DavisBaseBinaryFile.columnsTable), "rw");
-         Page.addNewPage(davisbaseColumnsCatalog, PageType.LEAF, 0, -1, -1);
+            DavisBasePrompt.getTBLFilePath(columnsTable), "rw");
+         Page.addNewPage(davisbaseColumnsCatalog, PageType.LEAF, -1, -1);
          Page page = new Page(davisbaseColumnsCatalog, 0);
 
          int currentPageNo = 0;
          
-         currentPageNo =  page.addTableRow(Arrays.asList(new Attribute[] { 
+         currentPageNo =  page.addTableRow(columnsTable,Arrays.asList(new Attribute[] { 
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.tablesTable),
                new Attribute(DataType.TEXT, "table_name"),
                new Attribute(DataType.TEXT, "TEXT"),
                new Attribute(DataType.SMALLINT, "1"), 
                new Attribute(DataType.TEXT, "NO") }));
                
-         currentPageNo = page.addTableRow(Arrays.asList(new Attribute[] { 
+         currentPageNo = page.addTableRow(columnsTable,Arrays.asList(new Attribute[] { 
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.tablesTable),
                new Attribute(DataType.TEXT, "record_count"),
                new Attribute(DataType.TEXT, "SMALLINT"),
                new Attribute(DataType.SMALLINT, "2"), 
                new Attribute(DataType.TEXT, "NO") }));
                
-          currentPageNo = page.addTableRow(Arrays.asList(new Attribute[] { 
+          currentPageNo = page.addTableRow(columnsTable,Arrays.asList(new Attribute[] { 
               
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.tablesTable),
                new Attribute(DataType.TEXT, "avg_length"),
@@ -236,7 +285,7 @@ public class DavisBaseBinaryFile {
                new Attribute(DataType.SMALLINT, "3"), 
                new Attribute(DataType.TEXT, "NO") }));
                
-          currentPageNo = page.addTableRow(Arrays.asList(new Attribute[] { 
+          currentPageNo = page.addTableRow(columnsTable,Arrays.asList(new Attribute[] { 
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.tablesTable),
                new Attribute(DataType.TEXT, "root_page"),
                new Attribute(DataType.TEXT, "SMALLINT"),
@@ -244,39 +293,40 @@ public class DavisBaseBinaryFile {
                new Attribute(DataType.TEXT, "NO") }));
 
 
-         currentPageNo = page.addTableRow(
+         currentPageNo = page.addTableRow(columnsTable,
                Arrays.asList(new Attribute[] { new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
                      new Attribute(DataType.TEXT, "table_name"), new Attribute(DataType.TEXT, "TEXT"),
                      new Attribute(DataType.SMALLINT, "1"), new Attribute(DataType.TEXT, "NO") }));
 
-         currentPageNo = page.addTableRow(
+         currentPageNo = page.addTableRow(columnsTable,
                Arrays.asList(new Attribute[] { new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
                      new Attribute(DataType.TEXT, "column_name"), new Attribute(DataType.TEXT, "TEXT"),
                      new Attribute(DataType.SMALLINT, "2"), new Attribute(DataType.TEXT, "NO") }));
 
-         currentPageNo = page.addTableRow(
+         currentPageNo = page.addTableRow(columnsTable,
                Arrays.asList(new Attribute[] { new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
                      new Attribute(DataType.TEXT, "data_type"), new Attribute(DataType.TEXT, "TEXT"),
                      new Attribute(DataType.SMALLINT, "3"), new Attribute(DataType.TEXT, "NO") }));
 
-         currentPageNo = page.addTableRow(
+         currentPageNo = page.addTableRow(columnsTable,
                Arrays.asList(new Attribute[] { new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
                      new Attribute(DataType.TEXT, "ordinal_position"), new Attribute(DataType.TEXT, "TEXT"),
                      new Attribute(DataType.SMALLINT, "4"), new Attribute(DataType.TEXT, "NO") }));
 
-         currentPageNo = page.addTableRow(
+         currentPageNo = page.addTableRow(columnsTable,
                Arrays.asList(new Attribute[] { new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
                      new Attribute(DataType.TEXT, "is_nullable"), new Attribute(DataType.TEXT, "TEXT"),
                      new Attribute(DataType.SMALLINT, "5"), new Attribute(DataType.TEXT, "NO") }));
 
          davisbaseColumnsCatalog.close();
+         dataStoreInitialized = true;
       } catch (Exception e) {
          out.println("Unable to create the database_columns file");
          out.println(e);
       }
    }
 
-
+/*
    //test creat table by hua 14/07
    public static void test() {
       System.out.println("1");
@@ -284,7 +334,7 @@ public class DavisBaseBinaryFile {
       try {
                   
          RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile("data/test.tbl", "rw");
-         Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, 0, -1, -1);
+         Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, -1, -1);
          Page page = new Page(davisbaseTablesCatalog,0);
 
          page.addTableRow(Arrays.asList(new Attribute[]{
@@ -323,6 +373,7 @@ public class DavisBaseBinaryFile {
      
    }
    //====end test
+   */
 
 }
 

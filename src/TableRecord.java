@@ -10,13 +10,14 @@ public class TableRecord
     public Byte[] colDatatypes;
     public Byte[] recordBody;
     private List<Attribute> attributes;
-    
+    public short recordOffset;
 
-    TableRecord(int rowId, byte[] colDatatypes, byte[] recordBody)
+    TableRecord(int rowId, short recordOffset, byte[] colDatatypes, byte[] recordBody)
     {
         this.rowId = rowId;
         this.recordBody= ByteConvertor.byteToBytes(recordBody);
         this.colDatatypes = ByteConvertor.byteToBytes(colDatatypes);
+        this.recordOffset =  recordOffset;
         setAttributes();
     }
 

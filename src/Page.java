@@ -53,34 +53,53 @@ public class Page {
         fillLeftChildren(); //TODO
 
     } catch (IOException ex) {
-      System.out.println("Error while reading the page" + ex.getMessage());
+      System.out.println("Error while reading the page " + ex.getMessage());
     }
   }
 
 //increase the size of the file and add a page to it (Todo: handle overflow, page spliting and other functionalities)
-  public static void addNewPage(RandomAccessFile file,PageType pageType, int pageNo,int rightPage, int parentPageNo)
+  public static int addNewPage(RandomAccessFile file,PageType pageType, int rightPage, int parentPageNo)
   {
     try 
     {
+      int pageNo = Long.valueOf((file.length()/DavisBaseBinaryFile.pageSize)).intValue();
       file.setLength(file.length() + DavisBaseBinaryFile.pageSize);
       file.seek(DavisBaseBinaryFile.pageSize * pageNo);
       file.write(pageType.getValue());
       file.write(0x00); //unused
       file.writeShort(0); // no of cells
-      file.writeShort((short)(DavisBaseBinaryFile.pageSize * pageNo + DavisBaseBinaryFile.pageSize)); // cell start offset
+      file.writeShort((short)(DavisBaseBinaryFile.pageSize)); // cell start offset
      
       file.writeInt(rightPage);
       
       file.writeInt(parentPageNo);
+      
+      return pageNo;
     } 
     catch (IOException ex) 
     {
         System.out.println("Error while adding new page" + ex.getMessage());
+        return -1;
     }
   }
 
+  public void updateRecord(TableRecord record,int ordinalPosition,Byte[] newValue) throws IOException
+  {
+    binaryFile.seek(pageStart + record.recordOffset + 7);
+    int valueOffset = 0;
+    for(int i=0;i<ordinalPosition;i++)
+    {
+    
+      valueOffset+= DataType.getLength((byte)binaryFile.readByte());
+    }
+
+    binaryFile.seek(pageStart + record.recordOffset + 7 + record.colDatatypes.length + valueOffset);
+    binaryFile.write(ByteConvertor.Bytestobytes(newValue));
+      
+  }
+ 
 //adds a table row - this method converts the attributes into byte array and calls addNewTableRecord
-public int addTableRow(List<Attribute> attributes)
+public int addTableRow(String tableName,List<Attribute> attributes) throws IOException
   {
       List<Byte> colDataTypes = new ArrayList<Byte>();
       List<Byte> recordBody = new ArrayList<Byte>();
@@ -104,11 +123,7 @@ public int addTableRow(List<Attribute> attributes)
 
         lastRowId++;
 
-        //Add  the record to in memory records list 
-        records.add(new TableRecord(
-                    lastRowId,
-                    ByteConvertor.lsttobyteList(colDataTypes), 
-                    ByteConvertor.lsttobyteList(recordBody)));
+      
     
         //calculate pay load size
         short payLoadSize = Integer.valueOf(recordBody.size() + 
@@ -117,32 +132,56 @@ public int addTableRow(List<Attribute> attributes)
         //create record header
         List<Byte> recordHeader = new ArrayList<>();
 
+        recordHeader.addAll(Arrays.asList(ByteConvertor.shortToBytes(payLoadSize)));  //payloadSize
         recordHeader.addAll(Arrays.asList(ByteConvertor.intToBytes(lastRowId))); //rowid
         recordHeader.add(Integer.valueOf(colDataTypes.size()).byteValue()); //number of columns
         recordHeader.addAll(colDataTypes); //column data types
 
-        return addNewTableRecord(recordHeader.toArray(new Byte[recordHeader.size()]), 
-                            recordBody.toArray(new Byte[recordBody.size()]),
-                            payLoadSize);
+        short newCellOffset = addNewTableRecord(recordHeader.toArray(new Byte[recordHeader.size()]), 
+                               recordBody.toArray(new Byte[recordBody.size()])
+                                );
+
+          //Add  the record to in memory records list 
+          records.add(new TableRecord(
+            lastRowId,newCellOffset,
+            ByteConvertor.lsttobyteList(colDataTypes), 
+            ByteConvertor.lsttobyteList(recordBody)));
+       
+           if(DavisBaseBinaryFile.dataStoreInitialized)
+           {
+             // TableMetaData metaData = new TableMetaData(tableName);
+              TableMetaData.updateMetaData(tableName);
+                     
+           }
+           return pageNo;
   }
 
+
+
+
 //adds a new table record and updates the corresponding bytes in the page
-  private int addNewTableRecord(Byte[] recordHeader, Byte[] recordBody, short payLoadSize)
+  private short addNewTableRecord(Byte[] recordHeader, Byte[] recordBody) throws IOException
   {
-    try {
-      //if there is no space in the current page
-      if(recordHeader.length + recordBody.length > availableSpace)
+
+        //if there is no space in the current page
+      if(recordHeader.length + recordBody.length + 4 > availableSpace)
       {
+        try{
         handleTableOverFlow();
+      
+      
+        }
+        catch(IOException e){
+          System.out.println("Error while handleTableOverFlow");
+        }
       }
     
     short cellStart =  contentStartOffset;
     
-    short newCellStart = (short)(cellStart - (short)(recordBody.length)  - (short)recordHeader.length - 1);
+                        
+    short newCellStart  = Integer.valueOf((cellStart - recordBody.length  - recordHeader.length - 2)).shortValue();
     binaryFile.seek(pageNo * DavisBaseBinaryFile.pageSize + newCellStart);
-    if(payLoadSize!=0)
-      binaryFile.writeShort(payLoadSize);
-   
+  
     //record head
     binaryFile.write(ByteConvertor.Bytestobytes(recordHeader)); // datatypes
 
@@ -158,19 +197,13 @@ public int addTableRow(List<Attribute> attributes)
 
     noOfCells++;
     binaryFile.seek(pageStart + 2); binaryFile.writeShort(noOfCells);
-
-    return pageNo;
     
-  } catch (IOException ex) {
-    System.out.println("Error while adding record to the page : " + ex.getMessage());
-    return pageNo;
-  }
-  }
+    availableSpace = contentStartOffset - 0x10 - (noOfCells *2);
+    return newCellStart;
+    
+    }
 
-  public int getNewPageNo() throws IOException
-  {
-    return Long.valueOf((binaryFile.length()/DavisBaseBinaryFile.pageSize) + 1).intValue();
-  }
+ 
 
   // This method creates new page and handles the overflow condition
   // TODO : This was not tested (not sure of the logic),
@@ -181,15 +214,14 @@ public int addTableRow(List<Attribute> attributes)
     if(pageType == PageType.LEAF)
       {
          //create a new leaf page
-        int newRightLeafPageNo = getNewPageNo();
-        addNewPage(binaryFile,pageType,newRightLeafPageNo,-1,-1);
+        int newRightLeafPageNo = addNewPage(binaryFile,pageType,-1,-1);
 
         //if the current leaf page is root
         if(parentPageNo == -1){
         
           //create new parent page
-          int newParentPageNo = getNewPageNo();
-          addNewPage(binaryFile, PageType.INTERIOR, newParentPageNo,
+           
+           int newParentPageNo = addNewPage(binaryFile, PageType.INTERIOR,
             newRightLeafPageNo, -1);
 
           //set the new leaf page as right sibling to the current page
@@ -199,7 +231,7 @@ public int addTableRow(List<Attribute> attributes)
 
           //Add the current page as left child for the parent
           Page newParentPage = new Page(binaryFile,newParentPageNo);
-          newParentPage.addLeftChild(pageNo);
+          newParentPageNo = newParentPage.addLeftChild(pageNo);
           //add the newly created leaf page as rightmost child of the parent
           newParentPage.setRightPageNo(newRightLeafPageNo);
 
@@ -234,8 +266,9 @@ public int addTableRow(List<Attribute> attributes)
   }
 
 
-//Add left child for trh current page
-  private int addLeftChild(int leftChildPageNo){
+//Add left child for the current page
+  private int addLeftChild(int leftChildPageNo) throws IOException
+  {
     if(pageType == PageType.INTERIOR)
     {
       List<Byte> recordHeader= new ArrayList<>();
@@ -246,8 +279,8 @@ public int addTableRow(List<Attribute> attributes)
       recordHeader.addAll(Arrays.asList(ByteConvertor.intToBytes(leftChildPageNo)));
       recordBody.addAll(Arrays.asList(ByteConvertor.intToBytes(lastRowId)));
 
-      pageNo = addNewTableRecord(recordHeader.toArray(new Byte[recordHeader.size()]),
-                                        recordBody.toArray(new Byte[recordBody.size()]),(short)0);
+      addNewTableRecord(recordHeader.toArray(new Byte[recordHeader.size()]),
+                                        recordBody.toArray(new Byte[recordBody.size()]));
     }
    return pageNo;
 
@@ -258,6 +291,18 @@ public int addTableRow(List<Attribute> attributes)
     leftChildren = new ArrayList<>();
 
 
+  }
+
+  //Returns the right most child page for inserting new records
+  public static int getPageNoForInsert(RandomAccessFile file,int rootPageNo)
+  {
+       Page rootPage = new Page(file,rootPageNo);
+       if(rootPage.pageType!= PageType.LEAF 
+            && rootPage.pageType!=PageType.LEAFINDEX)
+        return rootPage.rightPage;
+      else
+        return rootPageNo;
+       
   }
 
   //Copies all the members from the new page to the current page
@@ -306,7 +351,7 @@ public int addTableRow(List<Attribute> attributes)
         int rowId = binaryFile.readInt();
         noOfcolumns = binaryFile.readByte();
         
-        if(lastRowId == 0) lastRowId = rowId;
+        if(lastRowId < rowId) lastRowId = rowId;
         
         byte[] colDatatypes = new byte[noOfcolumns];
         byte[] recordBody = new byte[payLoadSize - noOfcolumns - 1];
@@ -314,7 +359,7 @@ public int addTableRow(List<Attribute> attributes)
         binaryFile.read(colDatatypes);
         binaryFile.read(recordBody);
 
-        TableRecord record = new TableRecord(rowId,colDatatypes, recordBody);
+        TableRecord record = new TableRecord(rowId,cellStart,colDatatypes, recordBody);
         records.add(record);
       }
     } catch (IOException ex) {

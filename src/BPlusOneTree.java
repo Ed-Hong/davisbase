@@ -16,6 +16,8 @@ public class BPlusOneTree{
         this.binaryFile = file;
         this.rootPageNo = rootPageNo;
     }
+    
+   
 
     //This method does a traversal on the B+1 tree and returns the leaf pages in order
     public List<Integer> getAllLeaves() throws IOException{
@@ -32,7 +34,7 @@ public class BPlusOneTree{
         }
         else // TODO traverse from root , add only leaf pages
         {
-            
+            leafPages.add(0);
              return leafPages;
         }
 
