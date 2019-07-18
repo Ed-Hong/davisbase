@@ -317,7 +317,6 @@ public class DavisBaseBinaryFile {
                Arrays.asList(new Attribute[] { new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
                      new Attribute(DataType.TEXT, "is_nullable"), new Attribute(DataType.TEXT, "TEXT"),
                      new Attribute(DataType.SMALLINT, "5"), new Attribute(DataType.TEXT, "NO") }));
-
          davisbaseColumnsCatalog.close();
          dataStoreInitialized = true;
       } catch (Exception e) {
