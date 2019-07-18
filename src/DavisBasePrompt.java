@@ -396,7 +396,7 @@ public class DavisBasePrompt {
 				valid = false;
 				for(int j = 0; j<domains.size();j++){
 					//column_name data_type ordinal_position is_nullable
-					DataType type = DataType.TEXT;
+					DataType type = DataType.TEXT; 	//todo insert actual data type
 					switch (domains.get(j).get(1)) {
 						case "INT":type = DataType.INT; break;
 						case "TEXT":type = DataType.TEXT; break;
