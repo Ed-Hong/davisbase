@@ -56,6 +56,8 @@ public class DavisBasePrompt {
         if(!new File(dataDir,DavisBaseBinaryFile.tablesTable+".tbl").exists() || 
             !new File(dataDir,DavisBaseBinaryFile.columnsTable+".tbl").exists())
                 DavisBaseBinaryFile.initializeDataStore();
+        else
+         DavisBaseBinaryFile.dataStoreInitialized = true;
     
 		//test creat table by hua 14/07
 		/*if(!new File(dataDir,"test.tbl").exists()){
@@ -189,8 +191,7 @@ public class DavisBasePrompt {
 				dropTable(userCommand);
 				break;
 			case "create":
-				System.out.println("CASE: CREATE");
-				parseCreateTable(userCommand);
+   			parseCreateTable(userCommand);
 				break;
 			case "update":
 				System.out.println("CASE: UPDATE");
@@ -246,7 +247,7 @@ public class DavisBasePrompt {
 				table_name = queryTableTokens.get(i);
 				break;
 			}
-			if(!queryTableTokens.get(i).equals("*"))
+			if(!queryTableTokens.get(i).equals("*") && !queryTableTokens.get(i).equals(","))
 			{
 				column_names.add(queryTableTokens.get(i));
 			}
@@ -303,7 +304,7 @@ public class DavisBasePrompt {
 			}
 			try {		
          
-				RandomAccessFile tableFile = new RandomAccessFile(DavisBaseBinaryFile.getDataFilePath(table_name), "r");
+				RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(table_name), "r");
 				DavisBaseBinaryFile tableBinaryFile = new DavisBaseBinaryFile(tableFile);
 				tableBinaryFile.selectRecords(tableMetaData,column_names,condition,false);
 				tableFile.close();
@@ -339,8 +340,6 @@ public class DavisBasePrompt {
 	 */
 	public static void parseCreateTable(String createTableString) {
 		
-		System.out.println("STUB: Calling your method to create a table");
-		System.out.println("Parsing the string:\"" + createTableString + "\"");
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(createTableString.split(" ")));
 
 		/* Define table file name */
@@ -365,44 +364,49 @@ public class DavisBasePrompt {
 				return;
 			}
 
-			String tableFileName = createTableTokens.get(2) + ".tbl";
-			RandomAccessFile tableFile = new RandomAccessFile("data/"+tableFileName, "rw");
-            Page.addNewPage(tableFile, PageType.LEAF, 0, 0, -1, -1);
+			String tableName = createTableTokens.get(2);
+			RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(tableName), "rw");
+            Page.addNewPage(tableFile, PageType.LEAF,-1, -1);
             tableFile.close();
 			
 			//update sys file
-			System.out.println("table");
-			RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile("data/davisbase_tables.tbl", "rw");
-			Page page = new Page(davisbaseTablesCatalog,0);
+			RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile(getTBLFilePath(DavisBaseBinaryFile.tablesTable), "rw");
+			TableMetaData davisbaseTableMetaData = new TableMetaData(DavisBaseBinaryFile.tablesTable);
+			
+         int pageNo = Page.getPageNoForInsert(davisbaseTablesCatalog, davisbaseTableMetaData.rootPageNo);
 
-			page.addTableRow(Arrays.asList(new Attribute[]{
-					new Attribute(DataType.TEXT,tableFileName),//DavisBaseBinaryFile.tablesTable->test
+			Page page = new Page(davisbaseTablesCatalog,pageNo);
+
+			pageNo = page.addTableRow(DavisBaseBinaryFile.tablesTable,Arrays.asList(new Attribute[]{
+					new Attribute(DataType.TEXT,createTableTokens.get(2)),//DavisBaseBinaryFile.tablesTable->test
 					new Attribute(DataType.INT,"0"),
 					new Attribute(DataType.SMALLINT,"0"),
 					new Attribute(DataType.SMALLINT,"0")
 			})); 
 			davisbaseTablesCatalog.close();
-			//======
-			//System.out.println("col");
-			//RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/"+DavisBaseBinaryFile.columnsTable+".tbl", "rw");
-			RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/test.tbl", "rw");
-            Page page1 = new Page(davisbaseColumnsCatalog,0);
+		
+      	RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile(getTBLFilePath(DavisBaseBinaryFile.columnsTable), "rw");
+			TableMetaData davisbaseColumnsMetaData = new TableMetaData(DavisBaseBinaryFile.columnsTable);
+			pageNo = Page.getPageNoForInsert(davisbaseColumnsCatalog, davisbaseColumnsMetaData.rootPageNo);
+
+            Page page1 = new Page(davisbaseColumnsCatalog,pageNo);
 			
 			
-			List<Attribute> list = new ArrayList<Attribute> ();
 			for(int i = 4,j = 1;i<createTableTokens.size();i+=3,j++){
 
 
-				page1.addTableRow(Arrays.asList(new Attribute[]{
-					new Attribute(DataType.TEXT,tableFileName),
+			pageNo = page1.addTableRow(DavisBaseBinaryFile.columnsTable,Arrays.asList(new Attribute[]{
+					new Attribute(DataType.TEXT,tableName),
 					new Attribute(DataType.TEXT,createTableTokens.get(i)),
-					new Attribute(DataType.TEXT,createTableTokens.get(i+1)),
+					new Attribute(DataType.TEXT,createTableTokens.get(i+1).toUpperCase()),
 					new Attribute(DataType.SMALLINT,String.valueOf(j)),
 					new Attribute(DataType.TEXT,"NO")
 		   		})); 
 			}
 				
 			davisbaseColumnsCatalog.close();
+         
+         System.out.println("\nTable created");
 		}
 		catch(Exception e) {
 			System.out.println(e);
@@ -419,7 +423,10 @@ public class DavisBasePrompt {
     }
 
     
-    
+	public static String getTBLFilePath(String tableName)
+	{
+	   return "data/" + tableName + ".tbl";
+	}
     
 	
 
