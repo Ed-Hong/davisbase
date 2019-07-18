@@ -20,7 +20,7 @@ public class Page {
   short cellHeaderSize = 6;
   int availableSpace = 0;
   RandomAccessFile binaryFile;
-  List<Integer> leftChildren;
+  List<TableInteriorRecord> leftChildren;
   
   //Load a page from a file
   //Reads the page header from the page and fills the attributes
@@ -29,6 +29,7 @@ public class Page {
     {
       this.pageNo = pageNo;
       records = new ArrayList<TableRecord>();
+      leftChildren = new ArrayList<>();
       this.binaryFile = file;
       lastRowId = 0;
       pageStart = DavisBaseBinaryFile.pageSize * pageNo;
@@ -54,6 +55,19 @@ public class Page {
 
     } catch (IOException ex) {
       System.out.println("Error while reading the page " + ex.getMessage());
+    }
+  }
+
+  public static PageType getPageType(RandomAccessFile file,int pageNo) throws IOException
+  {
+    try 
+    {
+      int pageStart = DavisBaseBinaryFile.pageSize * pageNo;
+      file.seek(pageStart);
+      return  PageType.get(file.readByte()); 
+    } catch (IOException ex) {
+      System.out.println("Error while getting the page type " + ex.getMessage());
+      throw ex;
     }
   }
 
@@ -168,8 +182,6 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
       {
         try{
         handleTableOverFlow();
-      
-      
         }
         catch(IOException e){
           System.out.println("Error while handleTableOverFlow");
@@ -286,13 +298,6 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
 
   }
 
-//TODO -  in case of Interior page fill the left children of the current page into a list of Integers
-  private void fillLeftChildren(){
-    leftChildren = new ArrayList<>();
-
-
-  }
-
   //Returns the right most child page for inserting new records
   public static int getPageNoForInsert(RandomAccessFile file,int rootPageNo)
   {
@@ -345,7 +350,9 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
       for (int i = 0; i < noOfCells; i++) {
         binaryFile.seek(pageStart + 0x10 + (i *2) );
         short cellStart = binaryFile.readShort();
-        binaryFile.seek(cellStart);
+        if(cellStart == 0)//ignore deleted cells
+          continue;
+        binaryFile.seek(pageStart + cellStart);
 
         payLoadSize = binaryFile.readShort();
         int rowId = binaryFile.readInt();
@@ -366,4 +373,27 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
       System.out.println("Error while filling records from the page" + ex.getMessage());
     }
   }
+
+// In case of Interior page fill the left children of the current page into a list of Integers
+private void fillLeftChildren(){
+  try {
+    int leftChildPageNo = 0;
+    int rowId =0;
+    for (int i = 0; i < noOfCells; i++) {
+      binaryFile.seek(pageStart + 0x10 + (i *2) );
+      short cellStart = binaryFile.readShort();
+      if(cellStart == 0)//ignore deleted cells
+        continue;
+      binaryFile.seek(pageStart + cellStart);
+
+      leftChildPageNo = binaryFile.readInt();
+      rowId = binaryFile.readInt();
+      leftChildren.add(new TableInteriorRecord(rowId, leftChildPageNo));
+    }
+  } catch (IOException ex) {
+    System.out.println("Error while filling records from the page" + ex.getMessage());
+  }
+
+}
+
 }

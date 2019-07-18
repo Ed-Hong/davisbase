@@ -27,22 +27,42 @@ public class BPlusOneTree{
          binaryFile.seek(rootPageNo * DavisBaseBinaryFile.pageSize);
         // if root is leaf page read directly return one one, no traversal required
         PageType rootPageType = PageType.get(binaryFile.readByte());
-        if(rootPageType == PageType.LEAF || rootPageType == PageType.LEAFINDEX)
+        if(rootPageType == PageType.LEAF)
         {
             leafPages.add(rootPageNo);
-            return leafPages;
         }
         else // TODO traverse from root , add only leaf pages
         {
-            leafPages.add(0);
-             return leafPages;
+            addLeaves(rootPageNo,leafPages);
         }
+
+        return leafPages;
+
 
     }
 
-    public int getRightMostPage() throws IOException{
+//recursively adds leaves
+    private void addLeaves(int interiorPageNo,List<Integer> leafPages) throws IOException
+    {
+        Page interiorPage = new Page(binaryFile,interiorPageNo);
+        for(TableInteriorRecord leftPage: interiorPage.leftChildren)
+        {
+            if(Page.getPageType(binaryFile,leftPage.leftChildPageNo) == PageType.LEAF)
+            {
+                leafPages.add(leftPage.leftChildPageNo);
+            }
+            else{
+                addLeaves(leftPage.leftChildPageNo, leafPages);
+            }
+        }
 
-       return 0;
+        if(Page.getPageType(binaryFile,interiorPage.rightPage) == PageType.LEAF)
+        {
+            leafPages.add(interiorPage.rightPage);
+        }
+        else{
+            addLeaves(interiorPage.rightPage, leafPages);
+        }
 
     }
 }
