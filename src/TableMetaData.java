@@ -57,6 +57,8 @@ public class TableMetaData{
             {
                loadColumnData();
             }
+
+            //todo address case when table does NOT exist (ie: throw an exception)
             
          } catch (Exception e) {
             System.out.println("error while checking Table Exists " + tableName);

@@ -19,7 +19,7 @@ public enum DataType {
       public String toString(){ return "BIGINT"; }},
      FLOAT((byte)5){ 
       @Override
-      public String toString(){ return "FLOAR"; }},
+      public String toString(){ return "FLOAT"; }},
      DOUBLE((byte)6){ 
       @Override
       public String toString(){ return "DOUBLE"; }},
