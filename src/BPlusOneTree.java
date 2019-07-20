@@ -16,6 +16,8 @@ public class BPlusOneTree{
         this.binaryFile = file;
         this.rootPageNo = rootPageNo;
     }
+    
+   
 
     //This method does a traversal on the B+1 tree and returns the leaf pages in order
     public List<Integer> getAllLeaves() throws IOException{
@@ -25,22 +27,42 @@ public class BPlusOneTree{
          binaryFile.seek(rootPageNo * DavisBaseBinaryFile.pageSize);
         // if root is leaf page read directly return one one, no traversal required
         PageType rootPageType = PageType.get(binaryFile.readByte());
-        if(rootPageType == PageType.LEAF || rootPageType == PageType.LEAFINDEX)
+        if(rootPageType == PageType.LEAF)
         {
             leafPages.add(rootPageNo);
-            return leafPages;
         }
         else // TODO traverse from root , add only leaf pages
         {
-            
-             return leafPages;
+            addLeaves(rootPageNo,leafPages);
         }
+
+        return leafPages;
+
 
     }
 
-    public int getRightMostPage() throws IOException{
+//recursively adds leaves
+    private void addLeaves(int interiorPageNo,List<Integer> leafPages) throws IOException
+    {
+        Page interiorPage = new Page(binaryFile,interiorPageNo);
+        for(TableInteriorRecord leftPage: interiorPage.leftChildren)
+        {
+            if(Page.getPageType(binaryFile,leftPage.leftChildPageNo) == PageType.LEAF)
+            {
+                leafPages.add(leftPage.leftChildPageNo);
+            }
+            else{
+                addLeaves(leftPage.leftChildPageNo, leafPages);
+            }
+        }
 
-       return 0;
+        if(Page.getPageType(binaryFile,interiorPage.rightPage) == PageType.LEAF)
+        {
+            leafPages.add(interiorPage.rightPage);
+        }
+        else{
+            addLeaves(interiorPage.rightPage, leafPages);
+        }
 
     }
 }

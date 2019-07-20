@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.math.BigInteger;
 
@@ -28,7 +29,7 @@ public class TableMetaData{
         try {
 
             RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile(
-                DavisBaseBinaryFile.getDataFilePath(DavisBaseBinaryFile.tablesTable), "r");
+                DavisBasePrompt.getTBLFilePath(DavisBaseBinaryFile.tablesTable), "r");
             
             //get the root page of the table
             int rootPageNo = DavisBaseBinaryFile.getRootPageNo(davisbaseTablesCatalog);
@@ -42,7 +43,7 @@ public class TableMetaData{
                    //if the record with table is found, get the root page No and record count; break the loop
                   if (new String(record.getAttributes().get(0).fieldValue).equals(tableName)) {
                     rootPageNo = Integer.parseInt(record.getAttributes().get(3).fieldValue);
-                    recordCount = Integer.parseInt(record.getAttributes().get(2).fieldValue);
+                    recordCount = Integer.parseInt(record.getAttributes().get(1).fieldValue);
                     tableExists = true;
                      break;
                   }
@@ -56,6 +57,8 @@ public class TableMetaData{
             {
                loadColumnData();
             }
+
+            //todo address case when table does NOT exist (ie: throw an exception)
             
          } catch (Exception e) {
             System.out.println("error while checking Table Exists " + tableName);
@@ -77,7 +80,7 @@ public class TableMetaData{
         try {
   
            RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile(
-            DavisBaseBinaryFile.getDataFilePath(DavisBaseBinaryFile.columnsTable), "r");
+            DavisBasePrompt.getTBLFilePath(DavisBaseBinaryFile.columnsTable), "r");
            int rootPageNo = DavisBaseBinaryFile.getRootPageNo(davisbaseColumnsCatalog);
   
            columnData = new ArrayList<>();
@@ -127,5 +130,56 @@ public class TableMetaData{
     }
 
     return lColumns.isEmpty();
+ }
+
+
+
+ public static void updateMetaData(String tableName)
+ {
+
+   //update root page in the tables catalog
+   try{
+      RandomAccessFile tableFile = new RandomAccessFile(
+         DavisBasePrompt.getTBLFilePath(tableName), "r");
+   
+         Integer rootPageNo = DavisBaseBinaryFile.getRootPageNo(tableFile);
+         tableFile.close();
+          
+         TableMetaData tablemetaData = new TableMetaData(tableName);
+         int recordCount = tablemetaData.recordCount + 1;
+         
+         TableMetaData updateTablemetaData = new TableMetaData(DavisBaseBinaryFile.tablesTable);
+          
+         RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile(
+                      DavisBasePrompt.getTBLFilePath(DavisBaseBinaryFile.tablesTable), "rw");
+       
+         DavisBaseBinaryFile tablesBinaryFile = new DavisBaseBinaryFile(davisbaseTablesCatalog);
+
+         Condition condition = new Condition();
+         condition.setColumName("table_name");
+         condition.columnOrdinal = 0;
+         condition.setConditionValue(tableName);
+         condition.setOperator("=");
+
+         List<String> columns = Arrays.asList("record_count","root_page");
+         List<Byte[]> newValues = new ArrayList<>();
+        
+         newValues.add(ByteConvertor.intToBytes(recordCount));
+         newValues.add(ByteConvertor.shortToBytes(rootPageNo.shortValue()));
+         
+         tablesBinaryFile.updateRecords(updateTablemetaData,condition,columns,newValues);
+                                              
+       davisbaseTablesCatalog.close();
+   }
+   catch(IOException e){
+      System.out.println("Error on updating meta data for " + tableName);
+   }
+
+   
+ }
+
+ public void updateRecordCount()
+ {
+
  }
 }
