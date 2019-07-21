@@ -159,6 +159,7 @@ public class DavisBasePrompt {
 		System.out.println("DavisBaseLite Version " + getVersion());
 		System.out.println(getCopyright());
 	}
+	
 		
 	public static void parseUserCommand (String userCommand) {
 		
@@ -178,6 +179,10 @@ public class DavisBasePrompt {
 			case "show":
 				if(commandTokens.get(1).equals("tables"))
 					parseUserCommand("select * from davisbase_tables");			
+				else if(commandTokens.get(1).equals("rowid"))
+					{DavisBaseBinaryFile.showRowId = true;
+					System.out.println("Table Select will noe include RowId");
+					}
 				else
 					System.out.println("I didn't understand the command: \"" + userCommand + "\"");
 				break;
@@ -247,9 +252,17 @@ public class DavisBasePrompt {
 			}
 			if(!queryTableTokens.get(i).equals("*") && !queryTableTokens.get(i).equals(","))
 			{
-				column_names.add(queryTableTokens.get(i));
+				if(queryTableTokens.get(i).contains(","))
+				{
+					ArrayList<String> colList = new ArrayList<String>(Arrays.asList(queryTableTokens.get(i).split(",")));
+					for(String col :colList)
+					{
+						column_names.add(col);
+					}
+				}
+				else
+					column_names.add(queryTableTokens.get(i));
 			}
-			
 		}
 
 		++i;
@@ -304,7 +317,7 @@ public class DavisBasePrompt {
          
 				RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(table_name), "r");
 				DavisBaseBinaryFile tableBinaryFile = new DavisBaseBinaryFile(tableFile);
-				tableBinaryFile.selectRecords(tableMetaData,column_names,condition,false);
+				tableBinaryFile.selectRecords(tableMetaData,column_names,condition);
 				tableFile.close();
 			}
 			catch(IOException exception){
@@ -452,14 +465,49 @@ public class DavisBasePrompt {
 
 		
 		try {
+      
 		
 			 //table and () check
-			if(!createTableTokens.get(1).equals("table")||!createTableTokens.get(3).equals("(")||!createTableTokens.get(createTableTokens.size()-1).equals(")")){
-				System.out.println("error");
+			if(!createTableTokens.get(1).equals("table")){
+				System.out.println("Syntax Error");
 				return;
 			}
+         
+        List<ColumnInfo> lstcolumnInformation = new ArrayList<>();
+        ArrayList<String> columnTokens = new ArrayList<String>(Arrays.
+                     asList(createTableString
+                        .substring(createTableString.indexOf("(") +1,createTableString.length() - 2).split(",")));              
+						short ordinalPosition = 1;
+         for(String columnToken :columnTokens)
+         {
+            
+		      ArrayList<String> colInfoToken = new ArrayList<String>(Arrays.asList(columnToken.trim().split(" ")));
+            ColumnInfo colInfo = new ColumnInfo();
+			colInfo.columnName = colInfoToken.get(0);
+			colInfo.dataType = DataType.get(colInfoToken.get(1).toUpperCase());
+			for(int i=0;i<colInfoToken.size();i++)
+			{
+	
+				if((colInfoToken.get(i).equals("null")))
+					{colInfo.isNullable = true; }
+				if(colInfoToken.get(i).contains("not") && (colInfoToken.get(i+1).contains("null")))
+				{
+						i++;
+				}
 
-			String tableName = createTableTokens.get(2);
+				if((colInfoToken.get(i).equals("unique")))
+					{colInfo.isUnique = true; }
+			    else if(colInfoToken.get(i).contains("primary") && (colInfoToken.get(i+1).contains("key"))){
+					colInfo.isPrimaryKey = true;	
+					i++;
+				}
+			
+			}
+			colInfo.ordinalPosition = ordinalPosition++;
+			lstcolumnInformation.add(colInfo);
+         
+         }
+			   String tableName = createTableTokens.get(2);
 			RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(tableName), "rw");
             Page.addNewPage(tableFile, PageType.LEAF,-1, -1);
             tableFile.close();
@@ -480,23 +528,17 @@ public class DavisBasePrompt {
 			})); 
 			davisbaseTablesCatalog.close();
 		
-      	RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile(getTBLFilePath(DavisBaseBinaryFile.columnsTable), "rw");
+      if(pageNo ==-1) return; //error
+      
+      		RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile(getTBLFilePath(DavisBaseBinaryFile.columnsTable), "rw");
 			TableMetaData davisbaseColumnsMetaData = new TableMetaData(DavisBaseBinaryFile.columnsTable);
 			pageNo = Page.getPageNoForInsert(davisbaseColumnsCatalog, davisbaseColumnsMetaData.rootPageNo);
 
             Page page1 = new Page(davisbaseColumnsCatalog,pageNo);
 			
-			
-			for(int i = 4,j = 1;i<createTableTokens.size();i+=3,j++){
-
-
-			pageNo = page1.addTableRow(DavisBaseBinaryFile.columnsTable,Arrays.asList(new Attribute[]{
-					new Attribute(DataType.TEXT,tableName),
-					new Attribute(DataType.TEXT,createTableTokens.get(i)),
-					new Attribute(DataType.TEXT,createTableTokens.get(i+1).toUpperCase()),
-					new Attribute(DataType.SMALLINT,String.valueOf(j)),
-					new Attribute(DataType.TEXT,"NO")
-		   		})); 
+			for(ColumnInfo column :lstcolumnInformation)
+			{
+				page1.addNewColumn(tableName, column);
 			}
 
 			davisbaseColumnsCatalog.close();
