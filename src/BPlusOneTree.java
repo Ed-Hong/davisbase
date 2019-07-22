@@ -29,6 +29,7 @@ public class BPlusOneTree{
         PageType rootPageType = PageType.get(binaryFile.readByte());
         if(rootPageType == PageType.LEAF)
         {
+        if(!leafPages.contains(rootPageNo))
             leafPages.add(rootPageNo);
         }
         else // TODO traverse from root , add only leaf pages
@@ -49,6 +50,7 @@ public class BPlusOneTree{
         {
             if(Page.getPageType(binaryFile,leftPage.leftChildPageNo) == PageType.LEAF)
             {
+             if(!leafPages.contains(leftPage.leftChildPageNo))
                 leafPages.add(leftPage.leftChildPageNo);
             }
             else{
@@ -58,11 +60,29 @@ public class BPlusOneTree{
 
         if(Page.getPageType(binaryFile,interiorPage.rightPage) == PageType.LEAF)
         {
-            leafPages.add(interiorPage.rightPage);
+           if(!leafPages.contains(interiorPage.rightPage))
+               leafPages.add(interiorPage.rightPage);
         }
         else{
             addLeaves(interiorPage.rightPage, leafPages);
         }
 
     }
+
+
+    //TODO - complete with index mapping
+	public List<Integer> getAllLeaves(Condition condition) throws IOException{
+	
+   if(condition == null)
+   {
+      //brute force logic (as there are no index) traverse theough the tree and get all leaf pages
+      return getAllLeaves();
+   }
+   else{
+      //TODO find the leaf page numbers based on the condition and index files
+      //right now we are taking all the leaves
+     return getAllLeaves();
+   }
+   
+   	}
 }

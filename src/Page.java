@@ -111,6 +111,22 @@ public class Page {
     binaryFile.write(ByteConvertor.Bytestobytes(newValue));
       
   }
+
+
+  public void addNewColumn(String tableName, ColumnInfo columnInfo) throws IOException
+  {
+      addTableRow(DavisBaseBinaryFile.columnsTable, Arrays.asList(new Attribute[] { 
+        new Attribute(DataType.TEXT, tableName),
+        new Attribute(DataType.TEXT, columnInfo.columnName),
+        new Attribute(DataType.TEXT, columnInfo.dataType.toString()),
+        new Attribute(DataType.SMALLINT, columnInfo.ordinalPosition.toString()), 
+        new Attribute(DataType.TEXT, columnInfo .isNullable ? "YES":"NO"),
+        new Attribute(DataType.TEXT, columnInfo .isPrimaryKey ? "PRI": "NO"),
+        new Attribute(DataType.TEXT, columnInfo .isUnique ? "YES": "NO")
+       }));
+       
+       
+  }
  
 //adds a table row - this method converts the attributes into byte array and calls addNewTableRecord
 public int addTableRow(String tableName,List<Attribute> attributes) throws IOException
@@ -118,9 +134,17 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
       List<Byte> colDataTypes = new ArrayList<Byte>();
       List<Byte> recordBody = new ArrayList<Byte>();
 
+      TableMetaData metaData  = null;
+      if(DavisBaseBinaryFile.dataStoreInitialized)
+      {
+        metaData = new TableMetaData(tableName);
+        if(!metaData.validateInsert(attributes))
+            return -1;
+      }
+
+     
       for(Attribute attribute : attributes)
       {
-
         //add value for the record body
         recordBody.addAll(Arrays.asList(attribute.fieldValueByte));
        
@@ -156,18 +180,49 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
                                 );
 
           //Add  the record to in memory records list 
-          records.add(new TableRecord(
+          records.add(new TableRecord(noOfCells,
             lastRowId,newCellOffset,
             ByteConvertor.lsttobyteList(colDataTypes), 
             ByteConvertor.lsttobyteList(recordBody)));
        
            if(DavisBaseBinaryFile.dataStoreInitialized)
            {
-             // TableMetaData metaData = new TableMetaData(tableName);
-              TableMetaData.updateMetaData(tableName);
+             metaData.recordCount++;
+             metaData.updateMetaData();
                      
            }
            return pageNo;
+  }
+
+  public void DeleteTableRecord(String tableName, short recordIndex)
+  {
+    try{
+
+      for (int i = recordIndex + 1; i < noOfCells; i++) { 
+      binaryFile.seek(pageStart + 0x10 + (i *2) );
+      short cellStart = binaryFile.readShort();
+      
+      if(cellStart == 0)
+          continue;
+          
+      binaryFile.seek(pageStart + 0x10 + ((i-1) *2));
+      binaryFile.write(cellStart);
+      }
+
+      noOfCells--;
+      
+      binaryFile.seek(pageStart + 2); 
+      binaryFile.writeShort(noOfCells);
+      
+      TableMetaData metaData = new TableMetaData(tableName);    
+      metaData.recordCount --;
+      metaData.updateMetaData();
+
+
+    }
+    catch(IOException e){
+      System.out.println("Error while deleting record at "+ recordIndex + "in page " + pageNo);
+    }
   }
 
 
@@ -243,7 +298,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
 
           //Add the current page as left child for the parent
           Page newParentPage = new Page(binaryFile,newParentPageNo);
-          newParentPageNo = newParentPage.addLeftChild(pageNo);
+          newParentPageNo = newParentPage.addLeftChild(pageNo,lastRowId+1);
           //add the newly created leaf page as rightmost child of the parent
           newParentPage.setRightPageNo(newRightLeafPageNo);
 
@@ -259,7 +314,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
         {
           //Add the current page as left child for the parent
           Page parentPage = new Page(binaryFile,parentPageNo);
-          parentPageNo = parentPage.addLeftChild(pageNo);
+          parentPageNo = parentPage.addLeftChild(pageNo,lastRowId+1);
 
           //add the newly created leaf page as rightmost child of the parent
           parentPage.setRightPageNo(newRightLeafPageNo);
@@ -279,17 +334,16 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
 
 
 //Add left child for the current page
-  private int addLeftChild(int leftChildPageNo) throws IOException
+  private int addLeftChild(int leftChildPageNo,int rowId) throws IOException
   {
     if(pageType == PageType.INTERIOR)
     {
       List<Byte> recordHeader= new ArrayList<>();
       List<Byte> recordBody= new ArrayList<>();
 
-      //increment rowid
-      lastRowId++;
+    
       recordHeader.addAll(Arrays.asList(ByteConvertor.intToBytes(leftChildPageNo)));
-      recordBody.addAll(Arrays.asList(ByteConvertor.intToBytes(lastRowId)));
+      recordBody.addAll(Arrays.asList(ByteConvertor.intToBytes(rowId)));
 
       addNewTableRecord(recordHeader.toArray(new Byte[recordHeader.size()]),
                                         recordBody.toArray(new Byte[recordBody.size()]));
@@ -322,7 +376,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
     isRoot = newPage.isRoot;
     records = newPage.records;
     pageStart = newPage.pageStart;
-    lastRowId = newPage.lastRowId;
+    lastRowId = lastRowId;
     availableSpace = newPage.availableSpace;
   }
 
@@ -347,10 +401,10 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
     byte noOfcolumns = 0;
   
     try {
-      for (int i = 0; i < noOfCells; i++) {
+      for (short i = 0; i < noOfCells; i++) {
         binaryFile.seek(pageStart + 0x10 + (i *2) );
         short cellStart = binaryFile.readShort();
-        if(cellStart == 0)//ignore deleted cells
+        if(cellStart == 0)
           continue;
         binaryFile.seek(pageStart + cellStart);
 
@@ -366,7 +420,8 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
         binaryFile.read(colDatatypes);
         binaryFile.read(recordBody);
 
-        TableRecord record = new TableRecord(rowId,cellStart,colDatatypes, recordBody);
+        TableRecord record = new TableRecord(i, rowId, cellStart
+                                              , colDatatypes, recordBody);
         records.add(record);
       }
     } catch (IOException ex) {
