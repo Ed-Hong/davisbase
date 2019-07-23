@@ -94,6 +94,8 @@ public enum DataType {
         return DataType.TEXT;
       return dataTypeLookup.get(value); 
  }
+
+ //GET the Datatype from String map (eg: "INT" -- > DataType.INT)
  public static DataType get(String text) { 
       return dataTypeStringLookup.get(text); 
  }
