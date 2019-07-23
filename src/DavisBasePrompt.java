@@ -347,15 +347,22 @@ public class DavisBasePrompt {
 		
 		try{
 			RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/davisbase_columns.tbl", "rw");
-			Page page = new Page(davisbaseColumnsCatalog,0);
+			TableMetaData davisbaseColumnsMetaData = new TableMetaData(DavisBaseBinaryFile.columnsTable);
+			int pageNo = Page.getPageNoForInsert(davisbaseColumnsCatalog, davisbaseColumnsMetaData.rootPageNo);
+			
 			String table = insertTokens.get(2);
 			//System.out.println(table);
 			//0: table name 1:col name 2:data_type 3:position 4:nullable
 			
 			ArrayList<String> row = new	ArrayList<String>();
 			ArrayList<ArrayList<String>> domains = new	ArrayList<ArrayList<String>>();
+
+			
+			
+			Page page = new Page(davisbaseColumnsCatalog,pageNo);
+			//System.out.println("pageNo: "+pageNo);
+				
 			for(int i = 0; i<page.records.size();i++){
-				//i start from 1 (0 is rowId)
 				//get target table
 				//System.out.println(page.records.get(i).getAttributes().get(0).fieldValue);
 				if(page.records.get(i).getAttributes().get(0).fieldValue.equals(table)){
@@ -367,9 +374,17 @@ public class DavisBasePrompt {
 					//store domain and constrain in domains
 					domains.add(new ArrayList<String>(row));
 					row.clear();					
-					
+						
 				}
+
 			}
+			
+			if(domains.size()==0){
+				System.out.println("can't find data in table");
+				return;
+			}
+
+			
 			/*
 			for(int j = 0; j<domains.size();j++){
 				System.out.println(domains.get(j).get(0));
@@ -378,8 +393,13 @@ public class DavisBasePrompt {
 				System.out.println(domains.get(j).get(3));
 			}*/
 			
+			
+			
 			RandomAccessFile dstTable = new RandomAccessFile("data/"+ table +".tbl", "rw");
-			Page dstPage = new Page(dstTable,0);
+			TableMetaData dstMetaData = new TableMetaData("data/"+ table +".tbl");
+			int dstPageNo = Page.getPageNoForInsert(dstTable, dstMetaData.rootPageNo);
+			//System.out.println("dstPageNo: "+dstPageNo);
+			Page dstPage = new Page(dstTable,dstPageNo);
 			
 			ArrayList<String> dstAttribute = new ArrayList<String>();
 			ArrayList<String> dstData = new	ArrayList<String>();
@@ -404,21 +424,34 @@ public class DavisBasePrompt {
 				return;
 			}
 
+			//System.out.println("dataSize: "+dstData.size());
 			for(int i = 0; i<dstData.size();i++){
-				//System.out.println(dstAttribute.get(i));
-				//System.out.println(dstData.get(i));
+				
+				
+				//System.out.println("attr: "+dstAttribute.get(i));
+				//System.out.println("data: "+dstData.get(i));
 				valid = false;
 				for(int j = 0; j<domains.size();j++){
 					//column_name data_type ordinal_position is_nullable
+					//System.out.println("domainSize: "+domains.size());
+					//System.out.println("domain: "+domains.get(j).get(0));
 					DataType type = DataType.TEXT; 	//todo insert actual data type
 					switch (domains.get(j).get(1)) {
 						case "INT":type = DataType.INT; break;
 						case "TEXT":type = DataType.TEXT; break;
 						case "SMALLINT":type = DataType.SMALLINT; break;
-
-						default:
-							break;
+						case "TINYINT":type = DataType.TINYINT; break;
+						case "BIGINT":type = DataType.BIGINT; break;
+						case "FLOAT":type = DataType.FLOAT; break;
+						case "DOUBLE":type = DataType.DOUBLE; break;
+						case "YEAR":type = DataType.YEAR; break;
+						case "TIME":type = DataType.TIME; break;
+						case "DATETIME":type = DataType.DATETIME; break;
+						case "DATE":type = DataType.DATE; break;
+						default: type = DataType.TEXT; break;
+						
 					}
+					
 					if(domains.get(j).get(0).equals(dstAttribute.get(i))){
 						record.add(new Attribute(type ,dstData.get(i)));
 						valid = true;
@@ -438,8 +471,6 @@ public class DavisBasePrompt {
 			}
 			
 			
-			//System.out.println(record.get(0).fieldValue);
-			//System.out.println(record.get(1).fieldValue);
 			if(valid)
 				dstPage.addTableRow(table, record);
 			else
@@ -458,7 +489,7 @@ public class DavisBasePrompt {
 	 *  @param queryString is a String of the user input
 	 */
 	public static void parseCreateTable(String createTableString) {
-		//create table aaa ( id int , c2 int , c3 text );
+		//create table aaa ( id int , name text );
 		System.out.println("STUB: Calling your method to create a table");
 		System.out.println("Parsing the string:\"" + createTableString + "\"");
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(createTableString.split(" ")));

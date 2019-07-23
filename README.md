@@ -3,6 +3,9 @@ CS 6360.5U1 - Database Design: Project
 
 ## TODO
 ### Features required for Part 1:
+* 7/23 Hua Insert Update
+    * add datatype
+    * slove "attribute can not be null" bug
 * Create Table
     * 7/18: Implemented by Hua/Arun; Testing thus far seems good.
 
