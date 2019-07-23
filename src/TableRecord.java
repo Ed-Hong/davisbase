@@ -11,13 +11,15 @@ public class TableRecord
     public Byte[] recordBody;
     private List<Attribute> attributes;
     public short recordOffset;
+    public short pageHeaderIndex;
 
-    TableRecord(int rowId, short recordOffset, byte[] colDatatypes, byte[] recordBody)
+    TableRecord(short pageHeaderIndex,int rowId, short recordOffset, byte[] colDatatypes, byte[] recordBody)
     {
         this.rowId = rowId;
         this.recordBody= ByteConvertor.byteToBytes(recordBody);
         this.colDatatypes = ByteConvertor.byteToBytes(colDatatypes);
         this.recordOffset =  recordOffset;
+        this.pageHeaderIndex = pageHeaderIndex;
         setAttributes();
     }
 

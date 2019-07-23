@@ -21,6 +21,7 @@ public class TableMetaData{
     public String tableName;
     public boolean tableExists;
     public int rootPageNo;
+    public int lastRowId;
 
     public TableMetaData(String tableName)
     {
@@ -42,7 +43,7 @@ public class TableMetaData{
                for (TableRecord record : page.records) {
                    //if the record with table is found, get the root page No and record count; break the loop
                   if (new String(record.getAttributes().get(0).fieldValue).equals(tableName)) {
-                    rootPageNo = Integer.parseInt(record.getAttributes().get(3).fieldValue);
+                    this.rootPageNo = Integer.parseInt(record.getAttributes().get(3).fieldValue);
                     recordCount = Integer.parseInt(record.getAttributes().get(1).fieldValue);
                     tableExists = true;
                      break;
@@ -101,8 +102,20 @@ public class TableMetaData{
                      //set column information in the data members of the class
                        columnData.add(record);
                        columnNames.add(record.getAttributes().get(1).fieldValue);
-                       columnNameAttrs.add(new ColumnInfo(DataType.get(record.getAttributes().get(2).fieldValue)
-                                        , record.getAttributes().get(1).fieldValue));
+                       ColumnInfo colInfo = new ColumnInfo(
+                                          DataType.get(record.getAttributes().get(2).fieldValue)
+                                        , record.getAttributes().get(1).fieldValue
+                                        , record.getAttributes().get(6).fieldValue.equals("YES")
+                                        , record.getAttributes().get(4).fieldValue.equals("YES")
+                                        , Short.parseShort(record.getAttributes().get(3).fieldValue)
+                                        );
+                                          
+                    if(record.getAttributes().get(5).fieldValue.equals("PRI"))
+                          colInfo.setAsPrimaryKey();
+                        
+                     columnNameAttrs.add(colInfo);
+
+                      
                     }
                  }
               }
@@ -134,7 +147,7 @@ public class TableMetaData{
 
 
 
- public static void updateMetaData(String tableName)
+ public void updateMetaData()
  {
 
    //update root page in the tables catalog
@@ -145,16 +158,14 @@ public class TableMetaData{
          Integer rootPageNo = DavisBaseBinaryFile.getRootPageNo(tableFile);
          tableFile.close();
           
-         TableMetaData tablemetaData = new TableMetaData(tableName);
-         int recordCount = tablemetaData.recordCount + 1;
          
-         TableMetaData updateTablemetaData = new TableMetaData(DavisBaseBinaryFile.tablesTable);
-          
          RandomAccessFile davisbaseTablesCatalog = new RandomAccessFile(
                       DavisBasePrompt.getTBLFilePath(DavisBaseBinaryFile.tablesTable), "rw");
        
          DavisBaseBinaryFile tablesBinaryFile = new DavisBaseBinaryFile(davisbaseTablesCatalog);
 
+         TableMetaData tablesMetaData = new TableMetaData(DavisBaseBinaryFile.tablesTable);
+         
          Condition condition = new Condition();
          condition.setColumName("table_name");
          condition.columnOrdinal = 0;
@@ -167,7 +178,7 @@ public class TableMetaData{
          newValues.add(ByteConvertor.intToBytes(recordCount));
          newValues.add(ByteConvertor.shortToBytes(rootPageNo.shortValue()));
          
-         tablesBinaryFile.updateRecords(updateTablemetaData,condition,columns,newValues);
+         tablesBinaryFile.updateRecords(tablesMetaData,condition,columns,newValues);
                                               
        davisbaseTablesCatalog.close();
    }
@@ -178,8 +189,48 @@ public class TableMetaData{
    
  }
 
- public void updateRecordCount()
+ public boolean validateInsert(List<Attribute> row) throws IOException
  {
+  RandomAccessFile tableFile = new RandomAccessFile(DavisBasePrompt.getTBLFilePath(tableName), "r");
+  DavisBaseBinaryFile file = new DavisBaseBinaryFile(tableFile);
+         
+     
+     for(int i=0;i<columnNameAttrs.size();i++)
+     {
+     
+        Condition condition = new Condition();
+         condition.columnName = columnNameAttrs.get(i).columnName;
+         condition.columnOrdinal = i;
+         condition.setOperator("=");
 
+        if(columnNameAttrs.get(i).isUnique)
+        {
+         condition.setConditionValue(row.get(i).fieldValue);
+            if(file.CountOf(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition) > 0){
+          System.out.println("Insert failed! Column "+ columnNameAttrs.get(i).columnName + " should be unique." );
+               tableFile.close();
+            return false;
+        }
+
+      
+         }
+      
+
+         if(columnNameAttrs.get(i).isPrimaryKey || columnNameAttrs.get(i).isNullable)
+         {
+          
+            condition.setConditionValue("NULL");
+              if(file.CountOf(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition) > 0){
+            System.out.println("Insert failed! Column "+ columnNameAttrs.get(i).columnName + " cannot be null." );
+             tableFile.close();
+            return false;
+
+         }
+
+               }
+     }
+ tableFile.close();
+     return true;
  }
+
 }
