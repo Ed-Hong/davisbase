@@ -92,12 +92,15 @@ public class DavisBaseBinaryFile {
                      page.updateRecord(record,i,newValueMap.get(i));
                   }
                   else{
-                     //TODO delete the record and insert a new one, update indexes
-                  }
-                  
+                   //Delete the record and insert a new one, update indexes
+
+                     page.DeleteTableRecord(tablemetaData.tableName ,record.pageHeaderIndex);
+                     page.addTableRow(tablemetaData.tableName , record.getAttributes());
+                } 
                }
              }
       }
+    
       if(!tablemetaData.tableName.equals(tablesTable) && !tablemetaData.tableName.equals(columnsTable))
           System.out.println(count+" record(s) updated!");
 
@@ -139,7 +142,7 @@ public class DavisBaseBinaryFile {
        System.out.println(DavisBasePrompt.line("-",totalTablePrintLength));
 
    BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo);
-   List<Integer> leaves = new ArrayList<>();
+  
 
   
 

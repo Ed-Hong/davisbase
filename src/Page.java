@@ -124,8 +124,6 @@ public class Page {
         new Attribute(DataType.TEXT, columnInfo .isPrimaryKey ? "PRI": "NO"),
         new Attribute(DataType.TEXT, columnInfo .isUnique ? "YES": "NO")
        }));
-       
-       
   }
  
 //adds a table row - this method converts the attributes into byte array and calls addNewTableRecord
@@ -206,7 +204,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
           continue;
           
       binaryFile.seek(pageStart + 0x10 + ((i-1) *2));
-      binaryFile.write(cellStart);
+      binaryFile.writeShort(cellStart);
       }
 
       noOfCells--;
