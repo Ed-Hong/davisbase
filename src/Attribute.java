@@ -1,3 +1,6 @@
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+
 /*
     Attribute class denotes each cell in the table (Datatype and value)
 */
@@ -16,7 +19,7 @@ public class Attribute
     Attribute(DataType dataType,byte[] fieldValue){
         this.dataType = dataType;
         this.fieldValuebyte = fieldValue;
-    
+    try{
     //Convert the byte array into string
       switch(dataType)
       {
@@ -28,12 +31,15 @@ public class Attribute
         case BIGINT: this.fieldValue =  Long.valueOf(ByteConvertor.longFromByteArray(fieldValuebyte)).toString(); break;
         case FLOAT: this.fieldValue = Float.valueOf(ByteConvertor.floatFromByteArray(fieldValuebyte)).toString(); break;
         case DOUBLE: this.fieldValue = Double.valueOf(ByteConvertor.doubleFromByteArray(fieldValuebyte)).toString(); break;
-        case TEXT: this.fieldValue = new String(fieldValuebyte); break;
+        case TEXT: this.fieldValue = new String(fieldValuebyte, "UTF-8"); break;
          default:
-         this.fieldValue= new String(fieldValuebyte); break;
+         this.fieldValue= new String(fieldValuebyte, "UTF-8"); break;
       }
          this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);
-
+}
+catch(UnsupportedEncodingException ex){
+System.out.println("formatting exception : " + ex);
+}
     }
 
     Attribute(DataType dataType,String fieldValue){
@@ -51,9 +57,9 @@ public class Attribute
         case BIGINT: this.fieldValuebyte =  ByteConvertor.longTobytes(Long.parseLong(fieldValue)); break;
         case FLOAT: this.fieldValuebyte = ByteConvertor.floatTobytes(Float.parseFloat(fieldValue)); break;
         case DOUBLE: this.fieldValuebyte = ByteConvertor.doubleTobytes(Double.parseDouble(fieldValue)); break;
-        case TEXT: this.fieldValuebyte = fieldValue.getBytes(); break;
+        case TEXT: this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
          default:
-         this.fieldValuebyte = fieldValue.getBytes(); break;
+         this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
       }
       this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);
     }
