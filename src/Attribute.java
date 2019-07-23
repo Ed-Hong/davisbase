@@ -36,10 +36,10 @@ public class Attribute
          this.fieldValue= new String(fieldValuebyte, "UTF-8"); break;
       }
          this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);
-}
-catch(UnsupportedEncodingException ex){
-System.out.println("formatting exception : " + ex);
-}
+    } catch(Exception ex) {
+        System.out.println("Cannot convert " + fieldValue + " to " + dataType.toString());
+    }
+
     }
 
     Attribute(DataType dataType,String fieldValue){
@@ -47,21 +47,26 @@ System.out.println("formatting exception : " + ex);
         this.fieldValue = fieldValue;
 
         //Convert the string value into byte array based on DataType
-      switch(dataType)
-      {
-         case NULL:
-            this.fieldValuebyte = null; break;
-        case TINYINT: this.fieldValuebyte = new byte[]{ Byte.parseByte(fieldValue)}; break;
-        case SMALLINT: this.fieldValuebyte = ByteConvertor.shortTobytes(Short.parseShort(fieldValue)); break;
-        case INT: this.fieldValuebyte = ByteConvertor.intTobytes(Integer.parseInt(fieldValue)); break;
-        case BIGINT: this.fieldValuebyte =  ByteConvertor.longTobytes(Long.parseLong(fieldValue)); break;
-        case FLOAT: this.fieldValuebyte = ByteConvertor.floatTobytes(Float.parseFloat(fieldValue)); break;
-        case DOUBLE: this.fieldValuebyte = ByteConvertor.doubleTobytes(Double.parseDouble(fieldValue)); break;
-        case TEXT: this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
-         default:
-         this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
-      }
-      this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);
+        try {
+            switch(dataType)
+            {
+              case NULL:
+                  this.fieldValuebyte = null; break;
+              case TINYINT: this.fieldValuebyte = new byte[]{ Byte.parseByte(fieldValue)}; break;
+              case SMALLINT: this.fieldValuebyte = ByteConvertor.shortTobytes(Short.parseShort(fieldValue)); break;
+              case INT: this.fieldValuebyte = ByteConvertor.intTobytes(Integer.parseInt(fieldValue)); break;
+              case BIGINT: this.fieldValuebyte =  ByteConvertor.longTobytes(Long.parseLong(fieldValue)); break;
+              case FLOAT: this.fieldValuebyte = ByteConvertor.floatTobytes(Float.parseFloat(fieldValue)); break;
+              case DOUBLE: this.fieldValuebyte = ByteConvertor.doubleTobytes(Double.parseDouble(fieldValue)); break;
+              case TEXT: this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
+               default:
+               this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
+            }
+            this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);   
+        } catch (Exception e) {
+            System.out.println("Cannot convert " + fieldValue + " to " + dataType.toString());
+            throw e;
+        }
     }
    
 }

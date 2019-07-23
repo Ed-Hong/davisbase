@@ -218,6 +218,7 @@ public class DavisBasePrompt {
 				break;
 			case "quit":
 				isExit = true;
+				break;
 			default:
 				System.out.println("I didn't understand the command: \"" + userCommand + "\"");
 				break;
@@ -373,9 +374,7 @@ public class DavisBasePrompt {
 	}
 
     public static void parseInsert(String queryString) {
-		//INSERT INTO davisbase_tables ( table_name ) VALUES ( testName );
-    	System.out.println("STUB: This is the parseInsert method");
-		System.out.println("\tParsing the string:\"" + queryString + "\"");
+		//INSERT INTO table_name ( columns ) VALUES ( values );
 		ArrayList<String> insertTokens = new ArrayList<String>(Arrays.asList(queryString.split(" ")));
 		
 		try{
@@ -384,20 +383,15 @@ public class DavisBasePrompt {
 			int pageNo = Page.getPageNoForInsert(davisbaseColumnsCatalog, davisbaseColumnsMetaData.rootPageNo);
 			
 			String table = insertTokens.get(2);
-			//System.out.println(table);
 			//0: table name 1:col name 2:data_type 3:position 4:nullable
 			
 			ArrayList<String> row = new	ArrayList<String>();
 			ArrayList<ArrayList<String>> domains = new	ArrayList<ArrayList<String>>();
 
-			
-			
 			Page page = new Page(davisbaseColumnsCatalog,pageNo);
-			//System.out.println("pageNo: "+pageNo);
 				
 			for(int i = 0; i<page.records.size();i++){
 				//get target table
-				//System.out.println(page.records.get(i).getAttributes().get(0).fieldValue);
 				if(page.records.get(i).getAttributes().get(0).fieldValue.equals(table)){
 					//get ith col from davisbase_columns.tbl
 					row.add(page.records.get(i).getAttributes().get(1).fieldValue);
@@ -413,31 +407,19 @@ public class DavisBasePrompt {
 			}
 			
 			if(domains.size()==0){
-				System.out.println("can't find data in table");
+				System.out.println("Table does not exist.");
 				return;
 			}
 
-			
-			/*
-			for(int j = 0; j<domains.size();j++){
-				System.out.println(domains.get(j).get(0));
-				System.out.println(domains.get(j).get(1));
-				System.out.println(domains.get(j).get(2));
-				System.out.println(domains.get(j).get(3));
-			}*/
-			
-			
-			
 			RandomAccessFile dstTable = new RandomAccessFile("data/"+ table +".tbl", "rw");
 			TableMetaData dstMetaData = new TableMetaData("data/"+ table +".tbl");
 			int dstPageNo = Page.getPageNoForInsert(dstTable, dstMetaData.rootPageNo);
-			//System.out.println("dstPageNo: "+dstPageNo);
 			Page dstPage = new Page(dstTable,dstPageNo);
 			
 			ArrayList<String> dstAttribute = new ArrayList<String>();
 			ArrayList<String> dstData = new	ArrayList<String>();
-			for(int i = 4,step = 0; i<insertTokens.size();i++){//step:0 get attribue 1: data
-				
+
+			for(int i = 4,step = 0; i<insertTokens.size();i++){ //step:0 get attribue 1: data
 				String tmp = insertTokens.get(i);
 				if(tmp.equals("values")){
 					step++;
@@ -453,22 +435,15 @@ public class DavisBasePrompt {
 			boolean valid = true;
 			ArrayList<Attribute> record = new ArrayList<Attribute>();
 			if(dstAttribute.size() !=dstData.size()){
-				System.out.println("error");
+				System.out.println("Error: received " + dstAttribute.size() + " columns but got " + dstData.size() + " values.");
 				return;
 			}
 
-			//System.out.println("dataSize: "+dstData.size());
 			for(int i = 0; i<dstData.size();i++){
-				
-				
-				//System.out.println("attr: "+dstAttribute.get(i));
-				//System.out.println("data: "+dstData.get(i));
 				valid = false;
 				for(int j = 0; j<domains.size();j++){
 					//column_name data_type ordinal_position is_nullable
-					//System.out.println("domainSize: "+domains.size());
-					//System.out.println("domain: "+domains.get(j).get(0));
-					DataType type = DataType.TEXT; 	//todo insert actual data type
+					DataType type = DataType.TEXT;
 					switch (domains.get(j).get(1)) {
 						case "INT":type = DataType.INT; break;
 						case "TEXT":type = DataType.TEXT; break;
@@ -482,32 +457,37 @@ public class DavisBasePrompt {
 						case "DATETIME":type = DataType.DATETIME; break;
 						case "DATE":type = DataType.DATE; break;
 						default: type = DataType.TEXT; break;
-						
 					}
 					
 					if(domains.get(j).get(0).equals(dstAttribute.get(i))){
-						record.add(new Attribute(type ,dstData.get(i)));
-						valid = true;
+						try {
+							// Inserting NULL into a column that allows NULLs
+							if(dstData.get(i).equalsIgnoreCase("NULL")) {
+								if(domains.get(j).get(3).equalsIgnoreCase("YES")) {
+									record.add(new Attribute(DataType.NULL, "NULL"));
+									valid = true;
+								} else {
+									System.out.println("Column " + domains.get(j).get(0) + " does not allow NULLs.");
+									valid = false;
+								}
+							} else {
+								record.add(new Attribute(type, dstData.get(i)));
+								valid = true;
+							}
+						} catch (Exception e) {
+							valid = false;
+						}
 					}
-					else if(domains.get(j).get(3).equals("yes")){
-						record.add(new Attribute(type ,"NULL"));
-						valid = true;
-					}/*
-					else{
-						System.out.println("attribute can not be null");
-						valid = false;
-						break;
-					}*/
-					
 				}
 				
 			}
 			
-			
-			if(valid)
+			if(valid) {
 				dstPage.addTableRow(table, record);
-			else
-				System.out.println("attribute can not be null");
+			}
+			else {
+				System.out.println("INSERT aborted.");
+			}
 			dstTable.close();
 			davisbaseColumnsCatalog.close();
 		}

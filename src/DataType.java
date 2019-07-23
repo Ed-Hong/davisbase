@@ -75,6 +75,10 @@ public enum DataType {
                else if(s == DataType.TEXT){
                     dataTypePrintOffset.put(s, 25);
                }
+               else if(s == DataType.NULL){
+                    dataTypeSizeLookup.put(s.getValue(), 0);
+                    dataTypePrintOffset.put(s, 6);
+               }
           }
 
 
