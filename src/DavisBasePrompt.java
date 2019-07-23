@@ -504,6 +504,11 @@ public class DavisBasePrompt {
 			}
 			String tableName = createTableTokens.get(2);
          
+         if(tableName.indexOf("(") > -1)
+         {
+         tableName = tableName.substring(0,tableName.indexOf("("));
+                           } 
+                  
         List<ColumnInfo> lstcolumnInformation = new ArrayList<>();
         ArrayList<String> columnTokens = new ArrayList<String>(Arrays.
                      asList(createTableString
@@ -549,7 +554,7 @@ public class DavisBasePrompt {
 			Page page = new Page(davisbaseTablesCatalog,pageNo);
 
 			pageNo = page.addTableRow(DavisBaseBinaryFile.tablesTable,Arrays.asList(new Attribute[]{
-					new Attribute(DataType.TEXT,createTableTokens.get(2)),//DavisBaseBinaryFile.tablesTable->test
+					new Attribute(DataType.TEXT,tableName),//DavisBaseBinaryFile.tablesTable->test
 					new Attribute(DataType.INT,"0"),
 					new Attribute(DataType.SMALLINT,"0"),
 					new Attribute(DataType.SMALLINT,"0")
