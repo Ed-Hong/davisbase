@@ -15,8 +15,12 @@ public class ByteConvertor{
     }
 
     public static byte[] Bytestobytes(final Byte[] data){
-        byte[] result= new byte[data.length];
-        for(int i=0;i<data.length;i++)
+
+        if (data == null) System.out.println("data is null");
+
+        int length = data == null ? 0 : data.length;
+        byte[] result= new byte[length];
+        for(int i=0;i<length;i++)
             result[i] = data[i];
         return result;
     }

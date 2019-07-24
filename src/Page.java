@@ -114,6 +114,7 @@ public class Page {
 
   public void addNewColumn(String tableName, ColumnInfo columnInfo) throws IOException
   {
+    try {
       addTableRow(DavisBaseBinaryFile.columnsTable, Arrays.asList(new Attribute[] { 
         new Attribute(DataType.TEXT, tableName),
         new Attribute(DataType.TEXT, columnInfo.columnName),
@@ -122,7 +123,10 @@ public class Page {
         new Attribute(DataType.TEXT, columnInfo .isNullable ? "YES":"NO"),
         new Attribute(DataType.TEXT, columnInfo .isPrimaryKey ? "PRI": "NO"),
         new Attribute(DataType.TEXT, columnInfo .isUnique ? "YES": "NO")
-       }));
+       })); 
+    } catch (Exception e) {
+      System.out.println("Could not add column - aborting.");
+    }
   }
  
 //adds a table row - this method converts the attributes into byte array and calls addNewTableRecord
