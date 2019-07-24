@@ -37,7 +37,7 @@ public class Attribute
       }
          this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);
     } catch(Exception ex) {
-        System.out.println("Cannot convert " + fieldValue + " to " + dataType.toString());
+        System.out.println("Formatting exception:\n" + ex);
     }
 
     }

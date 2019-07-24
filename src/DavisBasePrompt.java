@@ -58,19 +58,6 @@ public class DavisBasePrompt {
                 DavisBaseBinaryFile.initializeDataStore();
         else
          DavisBaseBinaryFile.dataStoreInitialized = true;
-    
-		//test creat table by hua 14/07
-		/*if(!new File(dataDir,"test.tbl").exists()){
-			System.out.println("creating test.tbl...");
-			DavisBaseBinaryFile.test();
-		}
-		else{
-			System.out.println("update test.tbl...");
-			DavisBaseBinaryFile.test1();
-		}*/
-
-		//===end test
-
 
         /* Variable to collect user input from the prompt */
 		String userCommand = ""; 
@@ -182,10 +169,8 @@ public class DavisBasePrompt {
 		 * The first token can be used to determine the type of command 
 		 * The other tokens can be used to pass relevant parameters to each command-specific
 		 * method inside each case statement */
-		// String[] commandTokens = userCommand.split(" ");
 		ArrayList<String> commandTokens = new ArrayList<String>(Arrays.asList(userCommand.split(" ")));
 		
-
 		/*
 		*  This switch handles a very small list of hardcoded commands of known syntax.
 		*  You will want to rewrite this method to interpret more complex commands. 

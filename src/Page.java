@@ -176,7 +176,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
                                recordBody.toArray(new Byte[recordBody.size()])
                                 );
 
-          //Add  the record to in memory records list 
+          //Add the record to in memory records list 
           records.add(new TableRecord(noOfCells,
             lastRowId,newCellOffset,
             ByteConvertor.lsttobyteList(colDataTypes), 
@@ -416,7 +416,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
         records.add(record);
       }
     } catch (IOException ex) {
-      System.out.println("Error while filling records from the page" + ex.getMessage());
+      System.out.println("Error while filling records from the page " + ex.getMessage());
     }
   }
 
@@ -437,7 +437,7 @@ private void fillLeftChildren(){
       leftChildren.add(new TableInteriorRecord(rowId, leftChildPageNo));
     }
   } catch (IOException ex) {
-    System.out.println("Error while filling records from the page" + ex.getMessage());
+    System.out.println("Error while filling records from the page " + ex.getMessage());
   }
 
 }
