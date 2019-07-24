@@ -356,7 +356,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
        Page rootPage = new Page(file,rootPageNo);
        if(rootPage.pageType!= PageType.LEAF 
             && rootPage.pageType!=PageType.LEAFINDEX)
-        return rootPage.rightPage;
+        return getPageNoForInsert(file,rootPage.rightPage);
       else
         return rootPageNo;
        
