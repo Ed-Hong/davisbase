@@ -344,6 +344,9 @@ public class DavisBasePrompt {
     	System.out.println("STUB: This is the parseInsert method");
 		System.out.println("\tParsing the string:\"" + queryString + "\"");
 		ArrayList<String> insertTokens = new ArrayList<String>(Arrays.asList(queryString.split(" ")));
+		// for (String var : insertTokens) {
+		// 	System.out.println(var);
+		// }
 		
 		try{
 			RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/davisbase_columns.tbl", "rw");
