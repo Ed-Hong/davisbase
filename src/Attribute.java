@@ -96,9 +96,9 @@ public class Attribute
                       System.out.println("Could not convert " + fieldValue + " to DATETIME.");
                   }
                   break;
-              case TEXT: this.fieldValuebyte = fieldValue.getBytes(); break;
+              case TEXT: this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
                default:
-               this.fieldValuebyte = fieldValue.getBytes(); break;
+               this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
             }
             this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);  
         } catch (Exception e) {
