@@ -57,13 +57,13 @@ public class TableMetaData{
             if(tableExists)
             {
                loadColumnData();
+            } else {
+               throw new Exception("Table does not exist.");
             }
-
-            //todo address case when table does NOT exist (ie: throw an exception)
             
          } catch (Exception e) {
-            System.out.println("error while checking Table Exists " + tableName);
-              System.out.println(e);
+            System.out.println("Error while checking Table " + tableName + " exists.");
+            System.out.println(e);
          }
     }
 
@@ -123,7 +123,7 @@ public class TableMetaData{
   
            davisbaseColumnsCatalog.close();
         } catch (Exception e) {
-            System.out.println("error while getting column data for " + tableName);
+           System.out.println("Error while getting column data for " + tableName);
            System.out.println(e);
         }
   
@@ -183,7 +183,7 @@ public class TableMetaData{
        davisbaseTablesCatalog.close();
    }
    catch(IOException e){
-      System.out.println("Error on updating meta data for " + tableName);
+      System.out.println("Error updating meta data for " + tableName);
    }
 
    

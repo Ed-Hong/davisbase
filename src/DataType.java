@@ -75,6 +75,10 @@ public enum DataType {
                else if(s == DataType.TEXT){
                     dataTypePrintOffset.put(s, 25);
                }
+               else if(s == DataType.NULL){
+                    dataTypeSizeLookup.put(s.getValue(), 0);
+                    dataTypePrintOffset.put(s, 6);
+               }
           }
 
 
@@ -94,6 +98,8 @@ public enum DataType {
         return DataType.TEXT;
       return dataTypeLookup.get(value); 
  }
+
+ //GET the Datatype from String map (eg: "INT" -- > DataType.INT)
  public static DataType get(String text) { 
       return dataTypeStringLookup.get(text); 
  }
