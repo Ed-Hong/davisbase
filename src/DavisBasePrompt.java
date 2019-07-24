@@ -418,7 +418,7 @@ public class DavisBasePrompt {
             {
                   if(!dstMetaData.columnNames.contains(colToken.trim()))
                   {
-                     System.out.println("Invalid column" + colToken.trim());
+                     System.out.println("Invalid column : " + colToken.trim());
                      return;
                   }
             }
