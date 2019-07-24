@@ -93,7 +93,7 @@ public class Attribute
                       Date date = sdf.parse(fieldValue);  
                       this.fieldValuebyte = ByteConvertor.longTobytes(date.getTime());              
                   } catch (Exception e) {
-                      System.out.println("Could not convert " + fieldValue + " to DATETIME.");
+                      System.out.println("Could not convert " + fieldValue + " to DATE.");
                   }
                   break;
               case TEXT: this.fieldValuebyte = fieldValue.getBytes(); break;
@@ -103,6 +103,7 @@ public class Attribute
             this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);  
         } catch (Exception e) {
             System.out.println("Cannot convert " + fieldValue + " to " + dataType.toString());
+            System.out.println(e);
             throw e;
         }
     }
