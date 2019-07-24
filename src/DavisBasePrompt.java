@@ -408,11 +408,20 @@ public class DavisBasePrompt {
 							.substring(queryString.indexOf("(") +1
 									, queryString.indexOf(") values")).split(",")));       
                            
-			if(columnTokens.size() != dstMetaData.columnNames.size())
-			{
-				System.out.println("Column(s) missing in the column list");
-				return;
-			}
+			// if(columnTokens.size() != dstMetaData.columnNames.size())
+// 			{
+// 				System.out.println("Column(s) missing in the column list");
+// 				return;
+// 			}
+            //Column List validation
+            for(String colToken : columnTokens)
+            {
+                  if(!dstMetaData.columnNames.contains(colToken.trim()))
+                  {
+                     System.out.println("Invalid column : " + colToken.trim());
+                     return;
+                  }
+            }
 							
       		String valuesString = queryString
 							.substring(queryString.indexOf("values") + 6, queryString.length() -1);   
@@ -429,10 +438,12 @@ public class DavisBasePrompt {
 			for(ColumnInfo colInfo: dstMetaData.columnNameAttrs)
 			{
             int i=0;
+            boolean columnProvided = false;
 				for(i=0;i<columnTokens.size();i++)
 				{
 					if(columnTokens.get(i).trim().equals(colInfo.columnName))
 					{
+                   columnProvided = true;
 						try
 						{
 							String value = valueTokens.get(i).replace("'","").replace("\"","").trim();
@@ -456,8 +467,22 @@ public class DavisBasePrompt {
 						}
 					}
 				}
-				columnTokens.remove(i);
-            valueTokens.remove(i);
+            if(columnTokens.size() > i)
+            {
+   				columnTokens.remove(i);
+               valueTokens.remove(i);
+            }
+            
+            if(!columnProvided)
+            {
+               if(colInfo.isNullable)
+                 attributeToInsert.add(new Attribute(DataType.NULL, "NULL"));
+               else
+               {
+                  System.out.println("Cannot Insert NULL into "+ colInfo.columnName);
+						return;
+               }
+             }
 			}
 			
 			//insert attributes to the page
