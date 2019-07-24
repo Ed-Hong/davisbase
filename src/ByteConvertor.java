@@ -7,8 +7,9 @@ public class ByteConvertor{
 
     /* To-byte functions*/
     public static Byte[] byteToBytes(final byte[] data){
-        Byte[] result= new Byte[data.length];
-        for(int i=0;i<data.length;i++)
+        int length = data == null ? 0 : data.length;
+        Byte[] result= new Byte[length];
+        for(int i=0;i<length;i++)
             result[i] = data[i];
         return result;
     }

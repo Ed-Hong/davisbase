@@ -1,5 +1,7 @@
 import java.util.Date;
 import java.text.SimpleDateFormat;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 /*
     Attribute class denotes each cell in the table (Datatype and value)
@@ -19,7 +21,7 @@ public class Attribute
     Attribute(DataType dataType,byte[] fieldValue){
         this.dataType = dataType;
         this.fieldValuebyte = fieldValue;
-    
+    try{
     //Convert the byte array into string
       switch(dataType)
       {
@@ -46,11 +48,14 @@ public class Attribute
             this.fieldValue = (rawdate.getYear()+1900) + "-" + (rawdate.getMonth()+1)
                 + "-" + (rawdate.getDate());
             break;
-        case TEXT: this.fieldValue = new String(fieldValuebyte); break;
+        case TEXT: this.fieldValue = new String(fieldValuebyte, "UTF-8"); break;
          default:
-         this.fieldValue= new String(fieldValuebyte); break;
+         this.fieldValue= new String(fieldValuebyte, "UTF-8"); break;
       }
          this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);
+    } catch(Exception ex) {
+        System.out.println("Formatting exception:\n" + ex);
+    }
 
     }
 
@@ -59,41 +64,47 @@ public class Attribute
         this.fieldValue = fieldValue;
 
         //Convert the string value into byte array based on DataType
-      switch(dataType)
-      {
-         case NULL:
-            this.fieldValuebyte = null; break;
-        case TINYINT: this.fieldValuebyte = new byte[]{ Byte.parseByte(fieldValue)}; break;
-        case SMALLINT: this.fieldValuebyte = ByteConvertor.shortTobytes(Short.parseShort(fieldValue)); break;
-        case INT: this.fieldValuebyte = ByteConvertor.intTobytes(Integer.parseInt(fieldValue)); break;
-        case BIGINT: this.fieldValuebyte =  ByteConvertor.longTobytes(Long.parseLong(fieldValue)); break;
-        case FLOAT: this.fieldValuebyte = ByteConvertor.floatTobytes(Float.parseFloat(fieldValue)); break;
-        case DOUBLE: this.fieldValuebyte = ByteConvertor.doubleTobytes(Double.parseDouble(fieldValue)); break;
-        case YEAR: this.fieldValuebyte = new byte[] { (byte) (Integer.parseInt(fieldValue) - 2000) }; break;
-        case TIME: this.fieldValuebyte = ByteConvertor.intTobytes(Integer.parseInt(fieldValue)); break;
-        case DATETIME:
-            SimpleDateFormat sdftime = new SimpleDateFormat("yyyy/MM/dd_HH:mm:ss");
-            try {
-                Date datetime = sdftime.parse(fieldValue);  
-                this.fieldValuebyte = ByteConvertor.longTobytes(datetime.getTime());              
-            } catch (Exception e) {
-                System.out.println("Could not convert " + fieldValue + " to DATETIME.");
+
+        try {
+            switch(dataType)
+            {
+               case NULL:
+                  this.fieldValuebyte = null; break;
+              case TINYINT: this.fieldValuebyte = new byte[]{ Byte.parseByte(fieldValue)}; break;
+              case SMALLINT: this.fieldValuebyte = ByteConvertor.shortTobytes(Short.parseShort(fieldValue)); break;
+              case INT: this.fieldValuebyte = ByteConvertor.intTobytes(Integer.parseInt(fieldValue)); break;
+              case BIGINT: this.fieldValuebyte =  ByteConvertor.longTobytes(Long.parseLong(fieldValue)); break;
+              case FLOAT: this.fieldValuebyte = ByteConvertor.floatTobytes(Float.parseFloat(fieldValue)); break;
+              case DOUBLE: this.fieldValuebyte = ByteConvertor.doubleTobytes(Double.parseDouble(fieldValue)); break;
+              case YEAR: this.fieldValuebyte = new byte[] { (byte) (Integer.parseInt(fieldValue) - 2000) }; break;
+              case TIME: this.fieldValuebyte = ByteConvertor.intTobytes(Integer.parseInt(fieldValue)); break;
+              case DATETIME:
+                  SimpleDateFormat sdftime = new SimpleDateFormat("yyyy/MM/dd_HH:mm:ss");
+                  try {
+                      Date datetime = sdftime.parse(fieldValue);  
+                      this.fieldValuebyte = ByteConvertor.longTobytes(datetime.getTime());              
+                  } catch (Exception e) {
+                      System.out.println("Could not convert " + fieldValue + " to DATETIME.");
+                  }
+                  break;
+              case DATE:
+                  SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+                  try {
+                      Date date = sdf.parse(fieldValue);  
+                      this.fieldValuebyte = ByteConvertor.longTobytes(date.getTime());              
+                  } catch (Exception e) {
+                      System.out.println("Could not convert " + fieldValue + " to DATETIME.");
+                  }
+                  break;
+              case TEXT: this.fieldValuebyte = fieldValue.getBytes(); break;
+               default:
+               this.fieldValuebyte = fieldValue.getBytes(); break;
             }
-            break;
-        case DATE:
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-            try {
-                Date date = sdf.parse(fieldValue);  
-                this.fieldValuebyte = ByteConvertor.longTobytes(date.getTime());              
-            } catch (Exception e) {
-                System.out.println("Could not convert " + fieldValue + " to DATETIME.");
-            }
-            break;
-        case TEXT: this.fieldValuebyte = fieldValue.getBytes(); break;
-         default:
-         this.fieldValuebyte = fieldValue.getBytes(); break;
-      }
-      this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);
+            this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);  
+        } catch (Exception e) {
+            System.out.println("Cannot convert " + fieldValue + " to " + dataType.toString());
+            throw e;
+        }
     }
    
 }

@@ -32,7 +32,7 @@ public class BPlusOneTree{
         if(!leafPages.contains(rootPageNo))
             leafPages.add(rootPageNo);
         }
-        else // TODO traverse from root , add only leaf pages
+        else
         {
             addLeaves(rootPageNo,leafPages);
         }
