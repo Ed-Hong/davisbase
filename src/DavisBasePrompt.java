@@ -128,21 +128,36 @@ public class DavisBasePrompt {
 			out.println(line("*",80));
 			out.println("SUPPORTED COMMANDS\n");
 			out.println("All commands below are case insensitive\n");
+
 			out.println("SHOW TABLES;");
 			out.println("\tDisplay the names of all tables.\n");
+
+			out.println("CREATE TABLE <table_name> (<column_name> <data_type> <null> <unique>);");
+			out.println("\tCreates a table with the given columns.\n");
+
+			out.println("DROP TABLE <table_name>;");
+			out.println("\tRemove table data (i.e. all records) and its schema.\n");
+
+			out.println("UPDATE TABLE <table_name> SET <column_name> = <value> [WHERE <condition>];");
+			out.println("\tModify records data whose optional <condition>");
+			out.println("\tis <column_name> = <value>.\n");
+
+			out.println("INSERT INTO <table_name> (<column_list>) VALUES (<values_list>);");
+			out.println("\tInserts a new record into the table with the given values for the given columns.\n");
+
 			out.println("SELECT <column_list> FROM <table_name> [WHERE <condition>];");
 			out.println("\tDisplay table records whose optional <condition>");
 			out.println("\tis <column_name> = <value>.\n");
-			out.println("DROP TABLE <table_name>;");
-			out.println("\tRemove table data (i.e. all records) and its schema.\n");
-			out.println("UPDATE TABLE <table_name> SET <column_name> = <value> [WHERE <condition>];");
-			out.println("\tModify records data whose optional <condition> is\n");
+
 			out.println("VERSION;");
 			out.println("\tDisplay the program version.\n");
+
 			out.println("HELP;");
 			out.println("\tDisplay this help information.\n");
+
 			out.println("EXIT;");
 			out.println("\tExit the program.\n");
+
 			out.println(line("*",80));
 		}
 
