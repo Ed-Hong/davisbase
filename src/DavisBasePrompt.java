@@ -58,19 +58,6 @@ public class DavisBasePrompt {
                 DavisBaseBinaryFile.initializeDataStore();
         else
          DavisBaseBinaryFile.dataStoreInitialized = true;
-    
-		//test creat table by hua 14/07
-		/*if(!new File(dataDir,"test.tbl").exists()){
-			System.out.println("creating test.tbl...");
-			DavisBaseBinaryFile.test();
-		}
-		else{
-			System.out.println("update test.tbl...");
-			DavisBaseBinaryFile.test1();
-		}*/
-
-		//===end test
-
 
         /* Variable to collect user input from the prompt */
 		String userCommand = ""; 
@@ -94,7 +81,7 @@ public class DavisBasePrompt {
 	 */
 	public static void splashScreen() {
 		System.out.println(line("-",80));
-        System.out.println("Welcome to DavisBaseLite"); // Display the string.
+      System.out.println("Welcome to DavisBaseLite"); // Display the string.
 		System.out.println("DavisBaseLite Version " + getVersion());
 		System.out.println(getCopyright());
 		System.out.println("\nType \"help;\" to display supported commands.");
@@ -128,21 +115,36 @@ public class DavisBasePrompt {
 			out.println(line("*",80));
 			out.println("SUPPORTED COMMANDS\n");
 			out.println("All commands below are case insensitive\n");
+
 			out.println("SHOW TABLES;");
 			out.println("\tDisplay the names of all tables.\n");
+
+			out.println("CREATE TABLE <table_name> (<column_name> <data_type> <null> <unique>);");
+			out.println("\tCreates a table with the given columns.\n");
+
+			out.println("DROP TABLE <table_name>;");
+			out.println("\tRemove table data (i.e. all records) and its schema.\n");
+
+			out.println("UPDATE TABLE <table_name> SET <column_name> = <value> [WHERE <condition>];");
+			out.println("\tModify records data whose optional <condition>");
+			out.println("\tis <column_name> = <value>.\n");
+
+			out.println("INSERT INTO <table_name> (<column_list>) VALUES (<values_list>);");
+			out.println("\tInserts a new record into the table with the given values for the given columns.\n");
+
 			out.println("SELECT <column_list> FROM <table_name> [WHERE <condition>];");
 			out.println("\tDisplay table records whose optional <condition>");
 			out.println("\tis <column_name> = <value>.\n");
-			out.println("DROP TABLE <table_name>;");
-			out.println("\tRemove table data (i.e. all records) and its schema.\n");
-			out.println("UPDATE TABLE <table_name> SET <column_name> = <value> [WHERE <condition>];");
-			out.println("\tModify records data whose optional <condition> is\n");
+
 			out.println("VERSION;");
 			out.println("\tDisplay the program version.\n");
+
 			out.println("HELP;");
 			out.println("\tDisplay this help information.\n");
+
 			out.println("EXIT;");
 			out.println("\tExit the program.\n");
+
 			out.println(line("*",80));
 		}
 
@@ -167,10 +169,8 @@ public class DavisBasePrompt {
 		 * The first token can be used to determine the type of command 
 		 * The other tokens can be used to pass relevant parameters to each command-specific
 		 * method inside each case statement */
-		// String[] commandTokens = userCommand.split(" ");
 		ArrayList<String> commandTokens = new ArrayList<String>(Arrays.asList(userCommand.split(" ")));
 		
-
 		/*
 		*  This switch handles a very small list of hardcoded commands of known syntax.
 		*  You will want to rewrite this method to interpret more complex commands. 
@@ -377,122 +377,129 @@ public class DavisBasePrompt {
 		//INSERT INTO table_name ( columns ) VALUES ( values );
 		ArrayList<String> insertTokens = new ArrayList<String>(Arrays.asList(queryString.split(" ")));
 		
+		if(!insertTokens.get(1).equals("into"))
+		{
+			System.out.println("Syntax error");
+			return;
+		}
+
 		try{
-			RandomAccessFile davisbaseColumnsCatalog = new RandomAccessFile("data/davisbase_columns.tbl", "rw");
-			TableMetaData davisbaseColumnsMetaData = new TableMetaData(DavisBaseBinaryFile.columnsTable);
-			int pageNo = Page.getPageNoForInsert(davisbaseColumnsCatalog, davisbaseColumnsMetaData.rootPageNo);
-			
-			String table = insertTokens.get(2);
-			//0: table name 1:col name 2:data_type 3:position 4:nullable
-			
-			ArrayList<String> row = new	ArrayList<String>();
-			ArrayList<ArrayList<String>> domains = new	ArrayList<ArrayList<String>>();
-
-			Page page = new Page(davisbaseColumnsCatalog,pageNo);
-				
-			for(int i = 0; i<page.records.size();i++){
-				//get target table
-				if(page.records.get(i).getAttributes().get(0).fieldValue.equals(table)){
-					//get ith col from davisbase_columns.tbl
-					row.add(page.records.get(i).getAttributes().get(1).fieldValue);
-					row.add(page.records.get(i).getAttributes().get(2).fieldValue);
-					row.add(page.records.get(i).getAttributes().get(3).fieldValue);
-					row.add(page.records.get(i).getAttributes().get(4).fieldValue);
-					//store domain and constrain in domains
-					domains.add(new ArrayList<String>(row));
-					row.clear();					
-						
-				}
-
+			String tableName = insertTokens.get(2);
+			if(tableName.trim().length() == 0)
+			{
+			   System.out.println("Tablename cannot be empty");
+			   return;
 			}
+		 
+			//parsing logic 
+			if(tableName.indexOf("(") > -1)
+			{
+				  tableName = tableName.substring(0,tableName.indexOf("("));
+			} 
+			TableMetaData dstMetaData = new TableMetaData(tableName);
 			
-			if(domains.size()==0){
+			if(!dstMetaData.tableExists){
 				System.out.println("Table does not exist.");
 				return;
 			}
 
-			RandomAccessFile dstTable = new RandomAccessFile("data/"+ table +".tbl", "rw");
-			TableMetaData dstMetaData = new TableMetaData("data/"+ table +".tbl");
-			int dstPageNo = Page.getPageNoForInsert(dstTable, dstMetaData.rootPageNo);
-			Page dstPage = new Page(dstTable,dstPageNo);
+			ArrayList<String> columnTokens = new ArrayList<String>(Arrays.
+						 asList(queryString
+							.substring(queryString.indexOf("(") +1
+									, queryString.indexOf(") values")).split(",")));       
+                           
+			// if(columnTokens.size() != dstMetaData.columnNames.size())
+// 			{
+// 				System.out.println("Column(s) missing in the column list");
+// 				return;
+// 			}
+            //Column List validation
+            for(String colToken : columnTokens)
+            {
+                  if(!dstMetaData.columnNames.contains(colToken.trim()))
+                  {
+                     System.out.println("Invalid column : " + colToken.trim());
+                     return;
+                  }
+            }
+							
+      		String valuesString = queryString
+							.substring(queryString.indexOf("values") + 6, queryString.length() -1);   
+                     
+        	ArrayList<String> valueTokens = new ArrayList<String>(Arrays.
+						 asList(valuesString
+							.substring(valuesString.indexOf("(") +1
+									, valuesString.length()).split(",")));    
+
+
+			//fill attributes to insert
+			List<Attribute> attributeToInsert = new ArrayList<>();
 			
-			ArrayList<String> dstAttribute = new ArrayList<String>();
-			ArrayList<String> dstData = new	ArrayList<String>();
-
-			for(int i = 4,step = 0; i<insertTokens.size();i++){ //step:0 get attribue 1: data
-				String tmp = insertTokens.get(i);
-				if(tmp.equals("values")){
-					step++;
-					continue;
-				}
-				if(!tmp.equals(",")&& !tmp.equals("(") && !tmp.equals(")") && step ==0){
-					dstAttribute.add(tmp);
-				}
-				if(!tmp.equals(",")&& !tmp.equals("(") && !tmp.equals(")") && step ==1){
-					dstData.add(tmp);
-				}
-			}
-			boolean valid = true;
-			ArrayList<Attribute> record = new ArrayList<Attribute>();
-			if(dstAttribute.size() !=dstData.size()){
-				System.out.println("Error: received " + dstAttribute.size() + " columns but got " + dstData.size() + " values.");
-				return;
-			}
-
-			for(int i = 0; i<dstData.size();i++){
-				valid = false;
-				for(int j = 0; j<domains.size();j++){
-					//column_name data_type ordinal_position is_nullable
-					DataType type = DataType.TEXT;
-					switch (domains.get(j).get(1)) {
-						case "INT":type = DataType.INT; break;
-						case "TEXT":type = DataType.TEXT; break;
-						case "SMALLINT":type = DataType.SMALLINT; break;
-						case "TINYINT":type = DataType.TINYINT; break;
-						case "BIGINT":type = DataType.BIGINT; break;
-						case "FLOAT":type = DataType.FLOAT; break;
-						case "DOUBLE":type = DataType.DOUBLE; break;
-						case "YEAR":type = DataType.YEAR; break;
-						case "TIME":type = DataType.TIME; break;
-						case "DATETIME":type = DataType.DATETIME; break;
-						case "DATE":type = DataType.DATE; break;
-						default: type = DataType.TEXT; break;
-					}
-					
-					if(domains.get(j).get(0).equals(dstAttribute.get(i))){
-						try {
-							// Inserting NULL into a column that allows NULLs
-							if(dstData.get(i).equalsIgnoreCase("NULL")) {
-								if(domains.get(j).get(3).equalsIgnoreCase("YES")) {
-									record.add(new Attribute(DataType.NULL, "NULL"));
-									valid = true;
-								} else {
-									System.out.println("Column " + domains.get(j).get(0) + " does not allow NULLs.");
-									valid = false;
+			for(ColumnInfo colInfo: dstMetaData.columnNameAttrs)
+			{
+            int i=0;
+            boolean columnProvided = false;
+				for(i=0;i<columnTokens.size();i++)
+				{
+					if(columnTokens.get(i).trim().equals(colInfo.columnName))
+					{
+                   columnProvided = true;
+						try
+						{
+							String value = valueTokens.get(i).replace("'","").replace("\"","").trim();
+							if(valueTokens.get(i).trim().equals("null"))
+							{
+								if(!colInfo.isNullable)
+								{
+									System.out.println("Cannot Insert NULL into "+ colInfo.columnName);
+									return;
 								}
-							} else {
-								record.add(new Attribute(type, dstData.get(i)));
-								valid = true;
+								colInfo.dataType = DataType.NULL;
+								value = value.toUpperCase();
 							}
-						} catch (Exception e) {
-							valid = false;
+							Attribute attr = new Attribute(colInfo.dataType, value);
+							attributeToInsert.add(attr);
+							break;
+						}
+						catch(Exception e){
+								System.out.println("Invalid data format for " + columnTokens.get(i) + " values: "+ valueTokens.get(i));
+                        return;
 						}
 					}
 				}
-				
+            if(columnTokens.size() > i)
+            {
+   				columnTokens.remove(i);
+               valueTokens.remove(i);
+            }
+            
+            if(!columnProvided)
+            {
+               if(colInfo.isNullable)
+                 attributeToInsert.add(new Attribute(DataType.NULL, "NULL"));
+               else
+               {
+                  System.out.println("Cannot Insert NULL into "+ colInfo.columnName);
+						return;
+               }
+             }
 			}
 			
-			if(valid) {
-				dstPage.addTableRow(table, record);
-			}
-			else {
-				System.out.println("INSERT aborted.");
-			}
+			//insert attributes to the page
+			RandomAccessFile dstTable = new RandomAccessFile("data/"+ tableName +".tbl", "rw");       
+            int dstPageNo = Page.getPageNoForInsert(dstTable, dstMetaData.rootPageNo);
+			Page dstPage = new Page(dstTable,dstPageNo);
+
+			int pageNo = dstPage.addTableRow(tableName, attributeToInsert);
 			dstTable.close();
-			davisbaseColumnsCatalog.close();
+			if(pageNo!=-1)
+         		System.out.println("Record Inserted");
+            System.out.println();
+
 		}
-		catch(IOException ex){
-			System.out.println("Cannot seek to start content of the file :");
+		catch(Exception ex){
+			System.out.println(ex);
+			System.out.println("Error while inserting record");
 		}
     }
 
@@ -504,32 +511,39 @@ public class DavisBasePrompt {
 	public static void parseCreateTable(String createTableString) {
 
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(createTableString.split(" ")));
-		
-		try {
-      
 			 //table and () check
-			if(!createTableTokens.get(1).equals("table")){
+			 if(!createTableTokens.get(1).equals("table")){
 				System.out.println("Syntax Error");
 				return;
 			}
 			String tableName = createTableTokens.get(2);
-         
+         if(tableName.trim().length() == 0)
+         {
+            System.out.println("Tablename cannot be empty");
+            return;
+         }
+		try {
+      
+		        
          if(tableName.indexOf("(") > -1)
          {
-         tableName = tableName.substring(0,tableName.indexOf("("));
-                           } 
+               tableName = tableName.substring(0,tableName.indexOf("("));
+         } 
                   
         List<ColumnInfo> lstcolumnInformation = new ArrayList<>();
         ArrayList<String> columnTokens = new ArrayList<String>(Arrays.
                      asList(createTableString
                         .substring(createTableString.indexOf("(") +1,createTableString.length() - 1).split(",")));              
-						short ordinalPosition = 1;
+						
+                  short ordinalPosition = 1;
+                  
          for(String columnToken :columnTokens)
          {
             
 		    ArrayList<String> colInfoToken = new ArrayList<String>(Arrays.asList(columnToken.trim().split(" ")));
             ColumnInfo colInfo = new ColumnInfo();
 			colInfo.columnName = colInfoToken.get(0);
+			colInfo.isNullable = true; 
 			colInfo.dataType = DataType.get(colInfoToken.get(1).toUpperCase());
 			for(int i=0;i<colInfoToken.size();i++)
 			{
@@ -538,6 +552,7 @@ public class DavisBasePrompt {
 					{colInfo.isNullable = true; }
 				if(colInfoToken.get(i).contains("not") && (colInfoToken.get(i+1).contains("null")))
 				{
+					colInfo.isNullable = false; 
 						i++;
 				}
 
@@ -599,7 +614,11 @@ public class DavisBasePrompt {
 			
 			System.out.println("Error on creating Table");
 			System.out.println(e);
+			parseDelete("delete from table "+ DavisBaseBinaryFile.tablesTable + " where table_name = '"+tableName+"' ");
+			parseDelete("delete from table "+ DavisBaseBinaryFile.columnsTable + " where table_name = '"+tableName+"' ");
 		}
+		
+
 	}
 	
 

@@ -51,7 +51,7 @@ public class Page {
       if (pageType == PageType.LEAF)
         fillTableRecords();
       if(pageType == PageType.INTERIOR)
-        fillLeftChildren(); //TODO
+        fillLeftChildren();
 
     } catch (IOException ex) {
       System.out.println("Error while reading the page " + ex.getMessage());
@@ -71,7 +71,6 @@ public class Page {
     }
   }
 
-//increase the size of the file and add a page to it (Todo: handle overflow, page spliting and other functionalities)
   public static int addNewPage(RandomAccessFile file,PageType pageType, int rightPage, int parentPageNo)
   {
     try 
@@ -115,6 +114,7 @@ public class Page {
 
   public void addNewColumn(String tableName, ColumnInfo columnInfo) throws IOException
   {
+    try {
       addTableRow(DavisBaseBinaryFile.columnsTable, Arrays.asList(new Attribute[] { 
         new Attribute(DataType.TEXT, tableName),
         new Attribute(DataType.TEXT, columnInfo.columnName),
@@ -123,7 +123,10 @@ public class Page {
         new Attribute(DataType.TEXT, columnInfo .isNullable ? "YES":"NO"),
         new Attribute(DataType.TEXT, columnInfo .isPrimaryKey ? "PRI": "NO"),
         new Attribute(DataType.TEXT, columnInfo .isUnique ? "YES": "NO")
-       }));
+       })); 
+    } catch (Exception e) {
+      System.out.println("Could not add column - aborting.");
+    }
   }
  
 //adds a table row - this method converts the attributes into byte array and calls addNewTableRecord
@@ -177,7 +180,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
                                recordBody.toArray(new Byte[recordBody.size()])
                                 );
 
-          //Add  the record to in memory records list 
+          //Add the record to in memory records list 
           records.add(new TableRecord(noOfCells,
             lastRowId,newCellOffset,
             ByteConvertor.lsttobyteList(colDataTypes), 
@@ -268,12 +271,6 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
     
     }
 
- 
-
-  // This method creates new page and handles the overflow condition
-  // TODO : This was not tested (not sure of the logic),
-  // I wrote this based on my understanding from SDL
-  // have to check with professor regarding B+1 tree
   private void handleTableOverFlow() throws IOException
   {
     if(pageType == PageType.LEAF)
@@ -356,7 +353,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
        Page rootPage = new Page(file,rootPageNo);
        if(rootPage.pageType!= PageType.LEAF 
             && rootPage.pageType!=PageType.LEAFINDEX)
-        return rootPage.rightPage;
+        return getPageNoForInsert(file,rootPage.rightPage);
       else
         return rootPageNo;
        
@@ -423,7 +420,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
         records.add(record);
       }
     } catch (IOException ex) {
-      System.out.println("Error while filling records from the page" + ex.getMessage());
+      System.out.println("Error while filling records from the page " + ex.getMessage());
     }
   }
 
@@ -444,7 +441,7 @@ private void fillLeftChildren(){
       leftChildren.add(new TableInteriorRecord(rowId, leftChildPageNo));
     }
   } catch (IOException ex) {
-    System.out.println("Error while filling records from the page" + ex.getMessage());
+    System.out.println("Error while filling records from the page " + ex.getMessage());
   }
 
 }
