@@ -125,7 +125,7 @@ public class Page {
         new Attribute(DataType.TEXT, columnInfo .isUnique ? "YES": "NO")
        })); 
     } catch (Exception e) {
-      System.out.println("! Could not add column - aborting.");
+      System.out.println("! Could not add column");
     }
   }
  

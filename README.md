@@ -16,7 +16,7 @@
 
 * When inserting, `INSERT INTO <table> (<column_list>) VALUES (<value_list>)`, the given `<column_list>` will match on the columns of `<table>` using the NAMES of the columns, ie: it does not matter the order of the columns passed in `<column_list>` - just the names must match the actual column names. 
 
-* Cannot insert the string NULL. 
+* When inserting, `INSERT INTO <table> (<column_list>) VALUES (<value_list>)`, the given `<value_list>` is comma delimited, and strings need not be in quotes - quotes will be dropped. This means you cannot insert the string `NULL` into a nullable text column. 
 
 ## Features Supported
 * INSERT performs data type validation and will ABORT any invalid insertions.
