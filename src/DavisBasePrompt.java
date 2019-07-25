@@ -23,9 +23,9 @@ import static java.lang.System.out;
 public class DavisBasePrompt {
 
 	/* This can be changed to whatever you like */
-	static String prompt = "davisql> ";
-	static String version = "v1.0b(example)";
-	static String copyright = "Chris Irwin Davis";
+	static String prompt = "sqverylite> ";
+	static String version = "v1.0";
+	static String copyright = "Team Yellow";
 
 	static boolean isExit = false;
 	/*
@@ -81,8 +81,8 @@ public class DavisBasePrompt {
 	 */
 	public static void splashScreen() {
 		System.out.println(line("-",80));
-      System.out.println("Welcome to DavisBaseLite"); // Display the string.
-		System.out.println("DavisBaseLite Version " + getVersion());
+      	System.out.println("Welcome to SQVeryLite"); // Display the string.
+		System.out.println("SQVeryLite Version " + getVersion());
 		System.out.println(getCopyright());
 		System.out.println("\nType \"help;\" to display supported commands.");
 		System.out.println(line("-",80));
@@ -158,7 +158,7 @@ public class DavisBasePrompt {
 	}
 	
 	public static void displayVersion() {
-		System.out.println("DavisBaseLite Version " + getVersion());
+		System.out.println("SQVeryLite Version " + getVersion());
 		System.out.println(getCopyright());
 	}
 	
@@ -291,7 +291,7 @@ public class DavisBasePrompt {
 					ArrayList<String> colList = new ArrayList<String>(Arrays.asList(queryTableTokens.get(i).split(",")));
 					for(String col :colList)
 					{
-						column_names.add(col);
+						column_names.add(col.trim());
 					}
 				}
 				else
@@ -408,11 +408,6 @@ public class DavisBasePrompt {
 							.substring(queryString.indexOf("(") +1
 									, queryString.indexOf(") values")).split(",")));       
                            
-			// if(columnTokens.size() != dstMetaData.columnNames.size())
-// 			{
-// 				System.out.println("Column(s) missing in the column list");
-// 				return;
-// 			}
             //Column List validation
             for(String colToken : columnTokens)
             {
