@@ -119,7 +119,7 @@ public class DavisBasePrompt {
 			out.println("SHOW TABLES;");
 			out.println("\tDisplay the names of all tables.\n");
 
-			out.println("CREATE TABLE <table_name> (<column_name> <data_type> <null> <unique>);");
+			out.println("CREATE TABLE <table_name> (<column_name> <data_type> <not_null> <unique>);");
 			out.println("\tCreates a table with the given columns.\n");
 
 			out.println("DROP TABLE <table_name>;");
@@ -494,7 +494,7 @@ public class DavisBasePrompt {
 		}
 		catch(Exception ex){
 			System.out.println("! Error while inserting record");
-			System.out.println(ex);
+			//debug: System.out.println(ex);
 
 		}
     }
@@ -609,7 +609,7 @@ public class DavisBasePrompt {
 		catch(Exception e) {
 			
 			System.out.println("! Error on creating Table");
-			System.out.println(e);
+			//debug: System.out.println(e);
 			parseDelete("delete from table "+ DavisBaseBinaryFile.tablesTable + " where table_name = '"+tableName+"' ");
 			parseDelete("delete from table "+ DavisBaseBinaryFile.columnsTable + " where table_name = '"+tableName+"' ");
 		}
