@@ -181,10 +181,10 @@ public class DavisBasePrompt {
 					parseUserCommand("select * from davisbase_tables");			
 				else if(commandTokens.get(1).equals("rowid"))
 					{DavisBaseBinaryFile.showRowId = true;
-					System.out.println("Table Select will now include RowId");
+					System.out.println("* Table Select will now include RowId.");
 					}
 				else
-					System.out.println("I didn't understand the command: \"" + userCommand + "\"");
+					System.out.println("! I didn't understand the command: \"" + userCommand + "\"");
 				break;
 			case "select":
 				parseQuery(userCommand);
@@ -220,7 +220,7 @@ public class DavisBasePrompt {
 				isExit = true;
 				break;
 			default:
-				System.out.println("I didn't understand the command: \"" + userCommand + "\"");
+				System.out.println("! I didn't understand the command: \"" + userCommand + "\"");
 				break;
 		}
 	}
@@ -233,7 +233,7 @@ public class DavisBasePrompt {
 											(Arrays.asList(createIndexString.split(" ")));
 		try {
 			if(!createIndexTokens.get(4).equals("on")){
-				System.out.println("Syntax Error");
+				System.out.println("! Syntax Error");
 				return;
 			}
 			String tableName = createIndexTokens.get(3);
@@ -249,7 +249,7 @@ public class DavisBasePrompt {
 		}
 		catch(IOException e) {
 			
-			System.out.println("Error on creating Index");
+			System.out.println("! Error on creating Index");
 			System.out.println(e);
 		}
       
@@ -337,7 +337,7 @@ public class DavisBasePrompt {
 					condition.dataType = tableMetaData.columnNameAttrs.get(condition.columnOrdinal).dataType;
 				}
 				else{
-					System.out.println("Cannot find table/columns in catalog files");
+					System.out.println("! Cannot find table/columns in catalog files");
 					return;
 				}
          }
@@ -355,11 +355,11 @@ public class DavisBasePrompt {
 				tableFile.close();
 			}
 			catch(IOException exception){
-				System.out.println("Error selecting columns from table");
+				System.out.println("! Error selecting columns from table");
 			}
 		}
 		 else{
-			System.out.println("Cannot find table/columns in catalog files");
+			System.out.println("! Cannot find table/columns in catalog files");
 		}
 
 	}
@@ -379,7 +379,7 @@ public class DavisBasePrompt {
 		
 		if(!insertTokens.get(1).equals("into"))
 		{
-			System.out.println("Syntax error");
+			System.out.println("! Syntax error");
 			return;
 		}
 
@@ -387,7 +387,7 @@ public class DavisBasePrompt {
 			String tableName = insertTokens.get(2);
 			if(tableName.trim().length() == 0)
 			{
-			   System.out.println("Tablename cannot be empty");
+			   System.out.println("! Tablename cannot be empty");
 			   return;
 			}
 		 
@@ -399,7 +399,7 @@ public class DavisBasePrompt {
 			TableMetaData dstMetaData = new TableMetaData(tableName);
 			
 			if(!dstMetaData.tableExists){
-				System.out.println("Table does not exist.");
+				System.out.println("! Table does not exist.");
 				return;
 			}
 
@@ -413,7 +413,7 @@ public class DavisBasePrompt {
             {
                   if(!dstMetaData.columnNames.contains(colToken.trim()))
                   {
-                     System.out.println("Invalid column : " + colToken.trim());
+                     System.out.println("! Invalid column : " + colToken.trim());
                      return;
                   }
             }
@@ -446,7 +446,7 @@ public class DavisBasePrompt {
 							{
 								if(!colInfo.isNullable)
 								{
-									System.out.println("Cannot Insert NULL into "+ colInfo.columnName);
+									System.out.println("! Cannot Insert NULL into "+ colInfo.columnName);
 									return;
 								}
 								colInfo.dataType = DataType.NULL;
@@ -457,7 +457,7 @@ public class DavisBasePrompt {
 							break;
 						}
 						catch(Exception e){
-								System.out.println("Invalid data format for " + columnTokens.get(i) + " values: "+ valueTokens.get(i));
+								System.out.println("! Invalid data format for " + columnTokens.get(i) + " values: "+ valueTokens.get(i));
                         return;
 						}
 					}
@@ -474,7 +474,7 @@ public class DavisBasePrompt {
                  attributeToInsert.add(new Attribute(DataType.NULL, "NULL"));
                else
                {
-                  System.out.println("Cannot Insert NULL into "+ colInfo.columnName);
+                  System.out.println("! Cannot Insert NULL into "+ colInfo.columnName);
 						return;
                }
              }
@@ -488,13 +488,14 @@ public class DavisBasePrompt {
 			int pageNo = dstPage.addTableRow(tableName, attributeToInsert);
 			dstTable.close();
 			if(pageNo!=-1)
-         		System.out.println("Record Inserted");
+         		System.out.println("* Record Inserted");
             System.out.println();
 
 		}
 		catch(Exception ex){
+			System.out.println("! Error while inserting record");
 			System.out.println(ex);
-			System.out.println("Error while inserting record");
+
 		}
     }
 
@@ -508,13 +509,13 @@ public class DavisBasePrompt {
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(createTableString.split(" ")));
 			 //table and () check
 			 if(!createTableTokens.get(1).equals("table")){
-				System.out.println("Syntax Error");
+				System.out.println("! Syntax Error");
 				return;
 			}
 			String tableName = createTableTokens.get(2);
          if(tableName.trim().length() == 0)
          {
-            System.out.println("Tablename cannot be empty");
+            System.out.println("! Tablename cannot be empty");
             return;
          }
 		try {
@@ -582,7 +583,7 @@ public class DavisBasePrompt {
 			davisbaseTablesCatalog.close();
 		
       if(pageNo ==-1) {
-		  System.out.println("Duplicate table Name");
+		  System.out.println("! Duplicate table Name");
 		return;
 	  }
       	RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(tableName), "rw");
@@ -603,11 +604,11 @@ public class DavisBasePrompt {
 			davisbaseColumnsCatalog.close();
 
 		
-         System.out.println("\nTable created");
+         System.out.println("* Table created");
 		}
 		catch(Exception e) {
 			
-			System.out.println("Error on creating Table");
+			System.out.println("! Error on creating Table");
 			System.out.println(e);
 			parseDelete("delete from table "+ DavisBaseBinaryFile.tablesTable + " where table_name = '"+tableName+"' ");
 			parseDelete("delete from table "+ DavisBaseBinaryFile.columnsTable + " where table_name = '"+tableName+"' ");
@@ -630,7 +631,7 @@ public class DavisBasePrompt {
       
 		if(!deleteTableTokens.get(1).equals("from") 
 		 && !deleteTableTokens.get(2).equals("table")){
-			System.out.println("Syntax Error");
+			System.out.println("! Syntax Error");
 			return;
 		}
 
@@ -666,13 +667,13 @@ public class DavisBasePrompt {
 			{
 				if(!metaData.columnExists(tableName,Arrays.asList(condition.columnName)))
 				{
-					System.out.println("Column " + condition.columnName+ " does not exist !");
+					System.out.println("! Column " + condition.columnName+ " does not exist");
 					tableFile.close();
 					return;
 				}
 			}
 		else{
-			System.out.println("Table " + tableName+ " does not exist !");
+			System.out.println("! Table " + tableName+ " does not exist");
 			tableFile.close();
 			 return;
 		}
@@ -706,7 +707,7 @@ public class DavisBasePrompt {
 
 	}
 	catch(Exception e) {
-		System.out.println("Error on deleting rows in table : " +tableName);
+		System.out.println("! Error on deleting rows in table : " +tableName);
 		System.out.println(e);
 	}
 
