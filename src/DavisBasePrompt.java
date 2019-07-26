@@ -262,11 +262,29 @@ public class DavisBasePrompt {
 	public static void dropTable(String dropTableString) {
 		System.out.println("STUB: This is the dropTable method.");
 		System.out.println("\tParsing the string:\"" + dropTableString + "\"");
+		
+		
+		ArrayList<String> dropTableTokens = new ArrayList<String>(Arrays.asList(dropTableString.split(" ")));
+		String tableName = dropTableTokens.get(1);
+		parseDelete("delete from table "+ DavisBaseBinaryFile.tablesTable + " where table_name = '"+tableName+"' ");
+		parseDelete("delete from table "+ DavisBaseBinaryFile.columnsTable + " where table_name = '"+tableName+"' ");
+		File file = new File("data/"+tableName+".tbl");
+        if(file.delete()){
+            System.out.println("deleted");
+		}else System.out.println("doesn't exist");
+		
+		
+		
+		
+
+		
+		
+		//page.DeleteTableRecord(dropTableTokens.get(1) ,record.pageHeaderIndex);
 	}
 	
 	/**
-	 *  Stub method for executing queries
-	 *  @param queryString is a String of the user input
+		 *  Stub method for executing queries
+		 *  @param queryString is a String of the user input
 	 */
 	public static void parseQuery(String queryString) {
 		String table_name ="";
@@ -371,6 +389,7 @@ public class DavisBasePrompt {
 	public static void parseUpdate(String updateString) {
 		System.out.println("STUB: This is the dropTable method");
 		System.out.println("Parsing the string:\"" + updateString + "\"");
+		
 	}
 
     public static void parseInsert(String queryString) {
