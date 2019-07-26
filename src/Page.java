@@ -54,7 +54,7 @@ public class Page {
         fillLeftChildren();
 
     } catch (IOException ex) {
-      System.out.println("Error while reading the page " + ex.getMessage());
+      System.out.println("! Error while reading the page " + ex.getMessage());
     }
   }
 
@@ -66,7 +66,7 @@ public class Page {
       file.seek(pageStart);
       return  PageType.get(file.readByte()); 
     } catch (IOException ex) {
-      System.out.println("Error while getting the page type " + ex.getMessage());
+      System.out.println("! Error while getting the page type " + ex.getMessage());
       throw ex;
     }
   }
@@ -91,7 +91,7 @@ public class Page {
     } 
     catch (IOException ex) 
     {
-        System.out.println("Error while adding new page" + ex.getMessage());
+        System.out.println("! Error while adding new page" + ex.getMessage());
         return -1;
     }
   }
@@ -125,7 +125,7 @@ public class Page {
         new Attribute(DataType.TEXT, columnInfo .isUnique ? "YES": "NO")
        })); 
     } catch (Exception e) {
-      System.out.println("Could not add column - aborting.");
+      System.out.println("! Could not add column");
     }
   }
  
@@ -222,7 +222,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
 
     }
     catch(IOException e){
-      System.out.println("Error while deleting record at "+ recordIndex + "in page " + pageNo);
+      System.out.println("! Error while deleting record at "+ recordIndex + "in page " + pageNo);
     }
   }
 
@@ -240,7 +240,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
         handleTableOverFlow();
         }
         catch(IOException e){
-          System.out.println("Error while handleTableOverFlow");
+          System.out.println("! Error while handleTableOverFlow");
         }
       }
     
@@ -420,7 +420,7 @@ public int addTableRow(String tableName,List<Attribute> attributes) throws IOExc
         records.add(record);
       }
     } catch (IOException ex) {
-      System.out.println("Error while filling records from the page " + ex.getMessage());
+      System.out.println("! Error while filling records from the page " + ex.getMessage());
     }
   }
 
@@ -441,7 +441,7 @@ private void fillLeftChildren(){
       leftChildren.add(new TableInteriorRecord(rowId, leftChildPageNo));
     }
   } catch (IOException ex) {
-    System.out.println("Error while filling records from the page " + ex.getMessage());
+    System.out.println("! Error while filling records from the page " + ex.getMessage());
   }
 
 }

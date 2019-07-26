@@ -62,8 +62,8 @@ public class TableMetaData{
             }
             
          } catch (Exception e) {
-            System.out.println("Error while checking Table " + tableName + " exists.");
-            System.out.println(e);
+            System.out.println("! Error while checking Table " + tableName + " exists.");
+            //debug: System.out.println(e);
          }
     }
 
@@ -123,8 +123,8 @@ public class TableMetaData{
   
            davisbaseColumnsCatalog.close();
         } catch (Exception e) {
-           System.out.println("Error while getting column data for " + tableName);
-           System.out.println(e);
+           System.out.println("! Error while getting column data for " + tableName);
+           //debug: System.out.println(e);
         }
   
      }
@@ -183,7 +183,7 @@ public class TableMetaData{
        davisbaseTablesCatalog.close();
    }
    catch(IOException e){
-      System.out.println("Error updating meta data for " + tableName);
+      System.out.println("! Error updating meta data for " + tableName);
    }
 
    
@@ -207,7 +207,7 @@ public class TableMetaData{
         {
          condition.setConditionValue(row.get(i).fieldValue);
             if(file.CountOf(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition) > 0){
-          System.out.println("Insert failed! Column "+ columnNameAttrs.get(i).columnName + " should be unique." );
+          System.out.println("! Insert failed: Column "+ columnNameAttrs.get(i).columnName + " should be unique." );
                tableFile.close();
             return false;
         }
@@ -221,7 +221,7 @@ public class TableMetaData{
           
             condition.setConditionValue("NULL");
               if(file.CountOf(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition) > 0){
-            System.out.println("Insert failed! Column "+ columnNameAttrs.get(i).columnName + " cannot be null." );
+            System.out.println("! Insert failed: Column "+ columnNameAttrs.get(i).columnName + " cannot be null." );
              tableFile.close();
             return false;
 
