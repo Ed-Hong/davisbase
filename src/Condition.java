@@ -10,6 +10,8 @@ public class Condition
     boolean negation;
     public int columnOrdinal;
     public DataType dataType;
+
+    public static String[] supportedOperators = {"<=",">=","<>",">","<","="};
     
     //Converts the operator string from the user input to OperatorType
     public static OperatorType getOperatorType(String strOperator){

@@ -40,7 +40,7 @@ public class TableMetaData{
             for (Integer pageNo : bplusOneTree.getAllLeaves()) {
                Page page = new Page(davisbaseTablesCatalog, pageNo);
                //search theough all the records in each page
-               for (TableRecord record : page.records) {
+               for (TableRecord record : page.getPageRecords()) {
                    //if the record with table is found, get the root page No and record count; break the loop
                   if (new String(record.getAttributes().get(0).fieldValue).equals(tableName)) {
                     this.rootPageNo = Integer.parseInt(record.getAttributes().get(3).fieldValue);
@@ -95,7 +95,7 @@ public class TableMetaData{
            
              Page page = new Page(davisbaseColumnsCatalog, pageNo);
               
-              for (TableRecord record : page.records) {
+              for (TableRecord record : page.getPageRecords()) {
                   
                  if (record.getAttributes().get(0).fieldValue.equals(tableName)) {
                     {
@@ -103,7 +103,8 @@ public class TableMetaData{
                        columnData.add(record);
                        columnNames.add(record.getAttributes().get(1).fieldValue);
                        ColumnInfo colInfo = new ColumnInfo(
-                                          DataType.get(record.getAttributes().get(2).fieldValue)
+                                          tableName  
+                                        , DataType.get(record.getAttributes().get(2).fieldValue)
                                         , record.getAttributes().get(1).fieldValue
                                         , record.getAttributes().get(6).fieldValue.equals("YES")
                                         , record.getAttributes().get(4).fieldValue.equals("YES")
@@ -129,8 +130,8 @@ public class TableMetaData{
   
      }
 
-     // Method to check if the columns exists for the table in davisbase_columns
-   public boolean columnExists(String tableName, List<String> columns) {
+     // Method to check if the columns exists for the table
+   public boolean columnExists(List<String> columns) {
 
     if(columns.size() == 0)
        return true;
@@ -173,11 +174,11 @@ public class TableMetaData{
          condition.setOperator("=");
 
          List<String> columns = Arrays.asList("record_count","root_page");
-         List<Byte[]> newValues = new ArrayList<>();
-        
-         newValues.add(ByteConvertor.intToBytes(recordCount));
-         newValues.add(ByteConvertor.shortToBytes(rootPageNo.shortValue()));
-         
+         List<String> newValues = new ArrayList<>();
+
+         newValues.add(new Integer(recordCount).toString());
+         newValues.add(new Integer(rootPageNo).toString());
+
          tablesBinaryFile.updateRecords(tablesMetaData,condition,columns,newValues);
                                               
        davisbaseTablesCatalog.close();

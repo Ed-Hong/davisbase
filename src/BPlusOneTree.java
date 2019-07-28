@@ -75,7 +75,7 @@ public class BPlusOneTree{
 	
    if(condition == null)
    {
-      //brute force logic (as there are no index) traverse theough the tree and get all leaf pages
+      //brute force logic (as there are no index) traverse through the tree and get all leaf pages
       return getAllLeaves();
    }
    else{
@@ -85,4 +85,17 @@ public class BPlusOneTree{
    }
    
    	}
+      
+  //Returns the right most child page for inserting new records
+  public static int getPageNoForInsert(RandomAccessFile file,int rootPageNo)
+  {
+       Page rootPage = new Page(file,rootPageNo);
+       if(rootPage.pageType!= PageType.LEAF 
+            && rootPage.pageType!=PageType.LEAFINDEX)
+        return getPageNoForInsert(file,rootPage.rightPage);
+      else
+        return rootPageNo;
+       
+  }
+
 }
