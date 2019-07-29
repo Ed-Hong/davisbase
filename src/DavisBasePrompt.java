@@ -346,7 +346,6 @@ public class DavisBasePrompt {
 			}
 		}
 
-		++i;
 		TableMetaData tableMetaData = new TableMetaData(table_name);
 		Condition condition = null;
 		try {
@@ -751,24 +750,20 @@ public class DavisBasePrompt {
 		if (query.contains("where")) {
 			Condition condition = new Condition();
 			String whereClause = query.substring(query.indexOf("where") + 6, query.length());
-			ArrayList<String> whereClauseTokens = null;
-			for (int i = 0; i < Condition.supportedOperators.length; i++) {
-				if (whereClause.contains(Condition.supportedOperators[i])) {
-					whereClauseTokens = new ArrayList<String>(
-							Arrays.asList(whereClause.split(Condition.supportedOperators[i])));
-					condition.setOperator(Condition.supportedOperators[i]);
-				}
-			}
+			ArrayList<String> whereClauseTokens = new ArrayList<String>(Arrays.asList(whereClause.split(" ")));
 
-			if (whereClauseTokens != null && whereClauseTokens.get(0).contains("not")) {
+			// WHERE NOT column operator value
+			if (whereClauseTokens.get(0).equalsIgnoreCase("not")) {
 				condition.setNegation(true);
-				condition.setColumName(whereClauseTokens.get(0).split(" ")[0].trim());
-			} else {
+				condition.setColumName(whereClauseTokens.get(1).trim());
+				condition.setOperator(whereClauseTokens.get(2).trim());
+				condition.setConditionValue(whereClauseTokens.get(3).trim());
+			} else {	// WHERE column operator value
 				condition.setColumName(whereClauseTokens.get(0).trim());
+				condition.setOperator(whereClauseTokens.get(1).trim());
+				condition.setConditionValue(whereClauseTokens.get(2).trim());
 			}
-
-			condition.setConditionValue(whereClauseTokens.get(1).trim());
-
+			
 			if (tableMetaData.tableExists
 					&& tableMetaData.columnExists(new ArrayList<String>(Arrays.asList(condition.columnName)))) {
 				condition.columnOrdinal = tableMetaData.columnNames.indexOf(condition.columnName);
