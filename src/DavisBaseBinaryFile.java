@@ -102,7 +102,7 @@ public class DavisBaseBinaryFile {
       }
     
       if(!tablemetaData.tableName.equals(tablesTable) && !tablemetaData.tableName.equals(columnsTable))
-          System.out.println(count+" record(s) updated!");
+          System.out.println("* " + count+" record(s) updated.");
 
    }
 

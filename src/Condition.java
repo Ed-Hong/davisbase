@@ -21,7 +21,7 @@ public class Condition
             case "<=": return OperatorType.LESSTHANOREQUAL;
             case "<>": return OperatorType.NOTEQUAL;
             default:
-                System.out.println("Invalid operator \"" + strOperator + "\"");
+                System.out.println("! Invalid operator \"" + strOperator + "\"");
             return OperatorType.INVALID;
         }
     }
@@ -77,7 +77,7 @@ public class Condition
             case GREATERTHAN: return OperatorType.LESSTHANOREQUAL;
             case EQUALTO: return OperatorType.NOTEQUAL;
             default:
-                System.out.println("Invalid operator \"" + this.operator + "\"");
+                System.out.println("! Invalid operator \"" + this.operator + "\"");
             return OperatorType.INVALID;
         }
     }
