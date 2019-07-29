@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.io.RandomAccessFile;
-
+import java.io.File;
 import java.io.IOException;
 
 //B + 1 tree implementation for traversing Table files
@@ -10,11 +10,13 @@ public class BPlusOneTree{
     
     RandomAccessFile binaryFile;
     int rootPageNo;
+    String tableName;
 
-    public BPlusOneTree(RandomAccessFile file, int rootPageNo)
+    public BPlusOneTree(RandomAccessFile file, int rootPageNo,String tableName)
     {
         this.binaryFile = file;
         this.rootPageNo = rootPageNo;
+        this.tableName = tableName;
     }
     
    
@@ -70,18 +72,36 @@ public class BPlusOneTree{
     }
 
 
-    //TODO - complete with index mapping
+    
 	public List<Integer> getAllLeaves(Condition condition) throws IOException{
 	
-   if(condition == null)
+   if(condition == null || condition.getOperation() == OperatorType.NOTEQUAL || !(new File(DavisBasePrompt.getNDXFilePath(tableName, condition.columnName)).exists()))
    {
-      //brute force logic (as there are no index) traverse through the tree and get all leaf pages
+      //brute force logic (as there is no index) traverse through the tree and get all leaf pages
       return getAllLeaves();
    }
    else{
       //TODO find the leaf page numbers based on the condition and index files
       //right now we are taking all the leaves
-     return getAllLeaves();
+      RandomAccessFile indexFile = new RandomAccessFile(DavisBasePrompt.getNDXFilePath(tableName, condition.columnName),"r");
+      BTree bTree = new BTree(indexFile);
+     
+      //Binary search on the btree
+      List<Integer> rowIds = bTree.getRowIds(condition);
+
+      
+
+      //TODO remove later, print the rowids from index search
+      for(int rowId : rowIds)
+      {
+          System.out.print(" " + rowId + " ");
+      }
+
+      System.out.println();
+      indexFile.close();
+
+      //TODO stil using brute force - find logic to convert the obtained rowids into pageNumbers
+      return getAllLeaves();
    }
    
    	}

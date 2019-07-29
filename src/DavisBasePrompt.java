@@ -229,23 +229,23 @@ public class DavisBasePrompt {
 		default:
 			System.out.println("! I didn't understand the command: \"" + userCommand + "\"");
 			break;
-		}
+		  }
 	}
 
 	public static void test() {
 		Scanner scan = new Scanner(System.in);
 
-		for (int i = 0; i < 120; i++)
-			parseUserCommand("insert into test (id , name , col2 , cl4 , cas , name3 ) values (" + (i + 119)
-					+ ",'asdddsfksdfksdd', 1221,21,12,'asxasdssdsadfsadfdslksldlfjsdklfjsdfkjsdjkfjldsfksdfksdd' )");
+		for (int i = 0; i < 35; i++)
+			parseUserCommand("insert into test (id , name) values (" + (i) + ",'Arun"+i +"' )");
 
 		scan.nextLine();
 		parseUserCommand("show tables");
-		scan.close();
+      
+      scan.nextLine();
+ 
 
 	}
 
-	// TODO create Index
 	public static void parseCreateIndex(String createIndexString) {
 		ArrayList<String> createIndexTokens = new ArrayList<String>(Arrays.asList(createIndexString.split(" ")));
 		try {
@@ -283,7 +283,7 @@ public class DavisBasePrompt {
 			}
 
 			if (metaData.recordCount > 0) {
-				BPlusOneTree bPlusOneTree = new BPlusOneTree(tableFile, metaData.rootPageNo);
+				BPlusOneTree bPlusOneTree = new BPlusOneTree(tableFile, metaData.rootPageNo,metaData.tableName);
 				for (int pageNo : bPlusOneTree.getAllLeaves()) {
 					Page page = new Page(tableFile, pageNo);
 					for (TableRecord record : page.getPageRecords()) {
@@ -556,7 +556,7 @@ public class DavisBasePrompt {
 
 		} catch (Exception ex) {
 			System.out.println("! Error while inserting record");
-			// debug: System.out.println(ex);
+			 System.out.println(ex);
 
 		}
 	}
@@ -671,7 +671,7 @@ public class DavisBasePrompt {
 		} catch (Exception e) {
 
 			System.out.println("! Error on creating Table");
-			// debug: System.out.println(e);
+		   System.out.println(e.getMessage());
 			parseDelete("delete from table " + DavisBaseBinaryFile.tablesTable + " where table_name = '" + tableName
 					+ "' ");
 			parseDelete("delete from table " + DavisBaseBinaryFile.columnsTable + " where table_name = '" + tableName
@@ -710,7 +710,7 @@ public class DavisBasePrompt {
 			}
 			RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(tableName), "rw");
 
-			BPlusOneTree tree = new BPlusOneTree(tableFile, metaData.rootPageNo);
+			BPlusOneTree tree = new BPlusOneTree(tableFile, metaData.rootPageNo, metaData.tableName);
 			int count = 0;
 			for (int pageNo : tree.getAllLeaves(condition)) {
 				short deleteCountPerPage = 0;
@@ -734,7 +734,7 @@ public class DavisBasePrompt {
 
 		} catch (Exception e) {
 			System.out.println("! Error on deleting rows in table : " + tableName);
-			System.out.println(e);
+			System.out.println(e.getMessage());
 		}
 
 	}
@@ -749,7 +749,7 @@ public class DavisBasePrompt {
 
 	private static Condition extractConditionFromQuery(TableMetaData tableMetaData, String query) throws Exception {
 		if (query.contains("where")) {
-			Condition condition = new Condition();
+			Condition condition = new Condition(DataType.TEXT);
 			String whereClause = query.substring(query.indexOf("where") + 6, query.length());
 			ArrayList<String> whereClauseTokens = null;
 			for (int i = 0; i < Condition.supportedOperators.length; i++) {
@@ -757,6 +757,7 @@ public class DavisBasePrompt {
 					whereClauseTokens = new ArrayList<String>(
 							Arrays.asList(whereClause.split(Condition.supportedOperators[i])));
 					condition.setOperator(Condition.supportedOperators[i]);
+               break;
 				}
 			}
 

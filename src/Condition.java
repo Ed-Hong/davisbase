@@ -5,12 +5,18 @@ This class handles logic for where clause*/
 public class Condition
 {
     String columnName;
-    OperatorType operator;
+    private OperatorType operator;
     String comparisonValue;
     boolean negation;
     public int columnOrdinal;
     public DataType dataType;
 
+
+   public Condition(DataType dataType)
+   {
+      this.dataType = dataType;
+   }
+   
     public static String[] supportedOperators = {"<=",">=","<>",">","<","="};
     
     //Converts the operator string from the user input to OperatorType
@@ -27,11 +33,29 @@ public class Condition
             return OperatorType.INVALID;
         }
     }
+    
+    public static int compare(String value1,String value2,DataType dataType){
+      if(dataType == DataType.TEXT)
+         return  value1.toLowerCase().compareTo(value2);
+      else if(dataType == DataType.NULL)
+      {
+         if(value1 == value2)
+            return 0;
+         else if(value1!="NULL")
+            return 1;
+         else 
+            return -1;
+      }
+      else {
+               return  Long.valueOf(Long.parseLong(value1) - Long.parseLong(value2)).intValue();      
+      }
+    }
 
     //Does comparison on currentvalue with the comparison value
     public boolean checkCondition(String currentValue){
         OperatorType operation = getOperation();
 
+   if(dataType == DataType.TEXT || dataType == DataType.NULL)
         switch(operation)
         {
             case LESSTHANOREQUAL: return currentValue.toLowerCase().compareTo(comparisonValue) <=0;
@@ -43,6 +67,25 @@ public class Condition
             default: return false;
             
         }
+    else
+    {
+          switch(operation)
+        {
+            case LESSTHANOREQUAL: return Long.parseLong(currentValue) <= Long.parseLong(comparisonValue);
+            case GREATERTHANOREQUAL: return Long.parseLong(currentValue) >= Long.parseLong(comparisonValue);
+
+            case NOTEQUAL:  return Long.parseLong(currentValue) != Long.parseLong(comparisonValue);
+            case LESSTHAN:  return Long.parseLong(currentValue) < Long.parseLong(comparisonValue);
+
+            case GREATERTHAN:  return Long.parseLong(currentValue) > Long.parseLong(comparisonValue);
+            case EQUALTO:  return Long.parseLong(currentValue) == Long.parseLong(comparisonValue);
+
+            default: return false;
+            
+        }
+
+    }
+    
     }
 
     public void setConditionValue(String conditionValue){
@@ -64,7 +107,7 @@ public class Condition
         this.negation = negate;
     }
 
-    private OperatorType getOperation(){
+    public OperatorType getOperation(){
         if(!negation) return this.operator;
         else return negateOperator();
     }

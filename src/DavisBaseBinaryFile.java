@@ -39,7 +39,7 @@ public class DavisBaseBinaryFile {
 
    public int CountOf(TableMetaData tablemetaData, List<String> columNames, Condition condition) throws IOException{
 
-   BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo);
+   BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo, tablemetaData.tableName);
 
    int rowCount = 0;
    
@@ -90,7 +90,7 @@ public class DavisBaseBinaryFile {
          k++;
       }
 
-      BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo);
+      BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo,tablemetaData.tableName);
    
       for(Integer pageNo :  bPlusOneTree.getAllLeaves(condition))
       {
@@ -168,7 +168,7 @@ public class DavisBaseBinaryFile {
        System.out.println();
        System.out.println(DavisBasePrompt.line("-",totalTablePrintLength));
 
-   BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo);
+   BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo,tablemetaData.tableName);
   
    String currentValue ="";
    for(Integer pageNo : bPlusOneTree.getAllLeaves(condition))

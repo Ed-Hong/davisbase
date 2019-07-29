@@ -35,7 +35,7 @@ public class TableMetaData{
             //get the root page of the table
             int rootPageNo = DavisBaseBinaryFile.getRootPageNo(davisbaseTablesCatalog);
            
-            BPlusOneTree bplusOneTree = new BPlusOneTree(davisbaseTablesCatalog, rootPageNo);
+            BPlusOneTree bplusOneTree = new BPlusOneTree(davisbaseTablesCatalog, rootPageNo,tableName);
             //search through all leaf papges in davisbase_tables
             for (Integer pageNo : bplusOneTree.getAllLeaves()) {
                Page page = new Page(davisbaseTablesCatalog, pageNo);
@@ -87,7 +87,7 @@ public class TableMetaData{
            columnData = new ArrayList<>();
            columnNameAttrs = new ArrayList<>();
            columnNames = new ArrayList<>();
-           BPlusOneTree bPlusOneTree = new BPlusOneTree(davisbaseColumnsCatalog, rootPageNo);
+           BPlusOneTree bPlusOneTree = new BPlusOneTree(davisbaseColumnsCatalog, rootPageNo,tableName);
          
            /* Get all columns from the davisbase_columns, loop through all the leaf pages 
            and find the records with the table name */
@@ -167,7 +167,7 @@ public class TableMetaData{
 
          TableMetaData tablesMetaData = new TableMetaData(DavisBaseBinaryFile.tablesTable);
          
-         Condition condition = new Condition();
+         Condition condition = new Condition(DataType.TEXT);
          condition.setColumName("table_name");
          condition.columnOrdinal = 0;
          condition.setConditionValue(tableName);
@@ -199,7 +199,7 @@ public class TableMetaData{
      for(int i=0;i<columnNameAttrs.size();i++)
      {
      
-        Condition condition = new Condition();
+        Condition condition = new Condition(columnNameAttrs.get(i).dataType);
          condition.columnName = columnNameAttrs.get(i).columnName;
          condition.columnOrdinal = i;
          condition.setOperator("=");
@@ -217,18 +217,7 @@ public class TableMetaData{
          }
       
 
-         if(columnNameAttrs.get(i).isPrimaryKey || columnNameAttrs.get(i).isNullable)
-         {
-          
-            condition.setConditionValue("NULL");
-              if(file.CountOf(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition) > 0){
-            System.out.println("! Insert failed: Column "+ columnNameAttrs.get(i).columnName + " cannot be null." );
-             tableFile.close();
-            return false;
-
-         }
-
-               }
+  
      }
  tableFile.close();
      return true;
