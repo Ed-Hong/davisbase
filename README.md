@@ -1,11 +1,31 @@
-# DavisBase Project: Part 1 Submission
+# DavisBase Project: Part 2 TODO
 # Team Yellow
 
-## Running the program
-* To run the program execute the `run` bash script using `./run`.
-* Note that this will create a directory named `data/` within the `bin/` folder (if it doesn't already exist). The `bin/data/` directory contains all the `.tbl` files. 
+----------
 
-## Design Assumptions
+## Features required:
+* Primary Key column definition as part of Create Table.
+    * Only need to support Primary Key on a single column
+* Create Index (only need to support creating an index on a single column)
+    * Note that when a table is created with a column designated as the primary key, an index will be implicitly and automatically created on that column.
+* Update record
+    * Any updates to columns with fixed-sized data types should be done "in place". 
+    * Any update to a text/string column that results in a longer string should delete the original record from the B+1 tree and recreate the record with the longer string value as a new rowid at the far right leaf of the tree.
+    * All indexes in the table, including primary keys should be updated to point to the new rowid.
+* Delete record
+    * Simply remove the cell offset from the table header and shift the remaining offsets to close the gap.
+    * It is not necessary to physically remove the record data or move any other records from the body of the page.
+* Drop Table
+    * (1) Remove a table file, (2) all of its associated indexes, and (3) references to the table in the meta-data tables.
+* Querying using WHERE clause ie: SELECT * FROM table WHERE column = value;
+
+----------
+
+## Bugs:
+
+----------
+
+## Design Assumptions:
 * `Date` expects the following format when inserting: `YYYY-MM-DD`.
 
 * `Time` expects milliseconds after midnight when inserting, but will display as `hh:mm:ss` in 24-hour time or military time. 
@@ -17,14 +37,3 @@
 * When inserting, `INSERT INTO <table> (<column_list>) VALUES (<value_list>)`, the given `<column_list>` will match on the columns of `<table>` using the NAMES of the columns, ie: it does not matter the order of the columns passed in `<column_list>` - just the names must match the actual column names. 
 
 * When inserting, `INSERT INTO <table> (<column_list>) VALUES (<value_list>)`, the given `<value_list>` is comma delimited, and strings need not be in quotes - quotes will be dropped. This means you cannot insert the string `NULL` into a nullable text column. 
-
-## Features Supported
-* INSERT performs data type validation and will ABORT any invalid insertions.
-
-* Nullable Columns: NULL may only be inserted into a nullable column, columns by default are nullable, and default value for a nullable column is NULL.
-
-* Unique Columns: Columns by default are NOT unique. Attempting to INSERT a duplicate value into a unique column will fail.
-
-* MetaData Updates: Record Count in `davisbase_tables.tbl` is updated on INSERT.
-
-* Display RowId: `SHOW ROWID;` will enable RowId to be displayed on `SELECT`;
