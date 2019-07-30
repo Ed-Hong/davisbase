@@ -207,6 +207,9 @@ public class DavisBasePrompt {
 			case "delete":
 				parseDelete(userCommand);
 				break;
+			case "source":
+				parseSource(userCommand);
+				break;
 			case "help":
 				help();
 				break;
@@ -617,6 +620,16 @@ public class DavisBasePrompt {
 
 	}
 	
+	private static void parseSource(String insertFile) {
+		String command;
+		Scanner read = new Scanner (new File(insertfile));
+		read.useDelimiter(";");
+		while (read.hasNext()) {
+			command = read.next();
+			parseUserCommand(command + ";");
+		}
+		read.close();
+	}
 
 	/**
 	 *  Delete records from table
