@@ -30,6 +30,24 @@
 
 ----------
 
+## Bugs:
+* None as of 7/30/2019
+
+----------
+
+## Features Supported	
+* INSERT performs data type validation and will ABORT any invalid insertions.	
+
+ * Nullable Columns: NULL may only be inserted into a nullable column, columns by default are nullable, and default value for a nullable column is NULL.	
+
+ * Unique Columns: Columns by default are NOT unique. Attempting to INSERT a duplicate value into a unique column will fail.	
+
+ * MetaData Updates: Record Count in `davisbase_tables.tbl` is updated on INSERT.	
+
+ * Display RowId: `SHOW ROWID;` will enable RowId to be displayed on `SELECT`;
+
+----------
+
 ## Design Assumptions:
 * `Date` expects the following format when inserting: `YYYY-MM-DD`.
 
