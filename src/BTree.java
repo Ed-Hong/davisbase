@@ -2,9 +2,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.SortedSet;
 
 public class BTree {
     Page root;
@@ -20,17 +18,17 @@ public class BTree {
         if (page.pageType == PageType.LEAFINDEX) {
             return page.pageNo;
         } else {
-            if (Condition.compare(value , page.getIndexValues().get(0),page.indexValuePointer.get(page.getIndexValues().get(0)).dataType) < 0)
+            if (Condition.compare(value , page.getIndexValues().get(0),page.indexValueDataType) < 0)
                 return getClosestPageNo
                     (new Page(binaryFile,page.indexValuePointer.get(page.getIndexValues().get(0)).leftPageNo),
                         value);
-            else if(Condition.compare(value,page.getIndexValues().get(page.getIndexValues().size()-1),page.indexValuePointer.get(page.getIndexValues().get(page.getIndexValues().size()-1)).dataType) > 0)
+            else if(Condition.compare(value,page.getIndexValues().get(page.getIndexValues().size()-1),page.indexValueDataType) > 0)
                 return getClosestPageNo(
                     new Page(binaryFile,page.indexValuePointer.get(page.getIndexValues().get(page.getIndexValues().size()-1)).rightPageNo),
                         value);
             else{
                 //perform binary search 
-                String closestValue = binarySearch(page.getIndexValues().toArray(new String[page.getIndexValues().size()]),value,value,0,page.getIndexValues().size());
+                String closestValue = binarySearch(page.getIndexValues().toArray(new String[page.getIndexValues().size()]),value,0,page.getIndexValues().size() -1,page.indexValueDataType);
 
                 if(closestValue.compareTo(value) < 0)
                 {
@@ -106,8 +104,9 @@ public class BTree {
                addAllChildRowIds(page.indexValuePointer.get(indexValues.get(i)).leftPageNo, rowIds);
          
         }
-        
-        addAllChildRowIds(page.indexValuePointer.get(indexValue).leftPageNo, rowIds);
+         
+         if(page.indexValuePointer.get(indexValue)!= null)
+             addAllChildRowIds(page.indexValuePointer.get(indexValue).leftPageNo, rowIds);
         
 
         return rowIds;
@@ -122,13 +121,14 @@ public class BTree {
             return rowIds;
         Page page = new Page(this.binaryFile,pageNo);
         List<String> indexValues = Arrays.asList(page.getIndexValues().toArray(new String[page.getIndexValues().size()]));
-        for(int i=indexValues.size() - 1; i > 0 && Condition.compare(indexValues.get(i), indexValue, page.indexValueDataType) > 0; i--)
+        for(int i=indexValues.size() - 1; i >= 0 && Condition.compare(indexValues.get(i), indexValue, page.indexValueDataType) > 0; i--)
         {
                rowIds.addAll(page.indexValuePointer.get(indexValues.get(i)).getIndexNode().rowids);
-               addAllChildRowIds(page.indexValuePointer.get(indexValues.get(i)).leftPageNo, rowIds);
-        }
-        
-        addAllChildRowIds(page.indexValuePointer.get(indexValue).rightPageNo, rowIds);
+               addAllChildRowIds(page.indexValuePointer.get(indexValues.get(i)).rightPageNo, rowIds);
+         }
+
+        if(page.indexValuePointer.get(indexValue)!= null)
+           addAllChildRowIds(page.indexValuePointer.get(indexValue).rightPageNo, rowIds);
 
         return rowIds;
     }
@@ -142,10 +142,10 @@ public class BTree {
             {
                 rowIds.addAll(record.rowIds);
                 if(page.pageType == PageType.INTERIORINDEX)
-                    {
+                 {
                     addAllChildRowIds(record.leftPageNo, rowIds);
                     addAllChildRowIds(record.rightPageNo, rowIds);
-                    }
+                 }
             }  
     }
 
@@ -163,22 +163,55 @@ public class BTree {
         }
     }
 
-    private String binarySearch(String[] values,String searchValue,String closestValue,int start, int end)
+    public void delete(Attribute attribute, int rowid)
     {
-        if(end>=start)
+        
+        try{
+            int pageNo = getClosestPageNo(root, attribute.fieldValue) ;
+            Page page = new Page(binaryFile, pageNo);
+            
+            IndexNode tempNode = page.indexValuePointer.get(attribute.fieldValue).getIndexNode();
+            //remove the rowid from the index value
+            tempNode.rowids.remove(rowid);
+
+            page.DeleteIndex(tempNode);
+            page.addIndex(tempNode);
+
+            }
+            catch(IOException e)
+            {
+                 System.out.println("! Error while deleting " + attribute.fieldValue +" from index file");
+            }
+
+    }
+
+    private String binarySearch(String[] values,String searchValue,int start, int end , DataType dataType)
+    {
+
+        if(end - start <= 3)
         {
-            int mid = (end - start)/2 + start;
-            closestValue = values[mid];
-            if(values[mid].equals(searchValue))
-                return closestValue;
-
-            if(values[mid].compareTo(searchValue) < 0)
-                return binarySearch(values,searchValue,closestValue,mid + 1,end);
-            else 
-                return binarySearch(values,searchValue,closestValue,start,mid - 1);
+            int i =start;
+            for(i=start;i <end;i++){
+                if(Condition.compare(values[i], searchValue, dataType) < 0)
+                    continue;
+                else
+                    break;
+            }
+            return values[i];
         }
+        else{
+            
+                int mid = (end - start) / 2 + start;
+                if(values[mid].equals(searchValue))
+                    return values[mid];
 
-        return closestValue;
+                    if(Condition.compare(values[mid], searchValue, dataType) < 0)
+                    return binarySearch(values,searchValue,mid + 1,end,dataType);
+                else 
+                    return binarySearch(values,searchValue,start,mid - 1,dataType);
+            
+        }
+     
     }
 
 

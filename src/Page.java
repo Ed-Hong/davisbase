@@ -30,6 +30,7 @@ public class Page {
   public TreeSet<Long> lIndexValues;
   public TreeSet<String> sIndexValues;
   public HashMap<String,IndexRecord> indexValuePointer;
+  private Map<Integer,TableRecord> recordsMap;
   
   //Load a page from a file
   //Reads the page header from the page and fills the attributes
@@ -41,7 +42,8 @@ public class Page {
       lIndexValues = new TreeSet<>();
       sIndexValues = new TreeSet<>();
       indexValuePointer = new HashMap<String,IndexRecord>();
-      
+      recordsMap = new HashMap<>();
+
       this.binaryFile = file;
       lastRowId = 0;
       pageStart = DavisBaseBinaryFile.pageSize * pageNo;
@@ -73,18 +75,21 @@ public class Page {
 
   public List<String> getIndexValues()
   {
-      if(indexValueDataType == DataType.TEXT)
-        return  Arrays.asList(sIndexValues.toArray(new String[sIndexValues.size()]));
-      else
+      List<String> strIndexValues = new ArrayList<>();
+
+      if(sIndexValues.size() > 0)
+        strIndexValues.addAll(Arrays.asList(sIndexValues.toArray(new String[sIndexValues.size()])));
+       if(lIndexValues.size() > 0)
       {
         Long[] lArray = lIndexValues.toArray(new Long[lIndexValues.size()]);
-        List<String> strIndexValues = new ArrayList<>();
-        for(int i=0;i<lArray.length;i++)
+                for(int i=0;i<lArray.length;i++)
         {
           strIndexValues.add(lArray[i].toString());
         }
-        return strIndexValues;
-      }
+            }
+            
+              return strIndexValues;
+
         
   }
 
@@ -644,7 +649,7 @@ if(refreshTableRecords)
       leftPageNo = indexValuePointer.get(node.indexValue.fieldValue).leftPageNo;
       rowIds = indexValuePointer.get(node.indexValue.fieldValue).rowIds;
       DeletePageRecord(indexValuePointer.get(node.indexValue.fieldValue).pageHeaderIndex);
-      if(indexValueDataType == DataType.TEXT)
+      if(indexValueDataType == DataType.TEXT || indexValueDataType == null)
         sIndexValues.remove(node.indexValue.fieldValue);
       else
         lIndexValues.remove(Long.parseLong(node.indexValue.fieldValue));
@@ -711,7 +716,7 @@ private void refreshHeaderOffset()
     short payLoadSize = 0;
     byte noOfcolumns = 0;
     records = new ArrayList<TableRecord>();
-  
+    recordsMap =  new HashMap<>();
     try {
       for (short i = 0; i < noOfCells; i++) {
         binaryFile.seek(pageStart + 0x10 + (i *2) );
@@ -735,6 +740,7 @@ private void refreshHeaderOffset()
         TableRecord record = new TableRecord(i, rowId, cellStart
                                               , colDatatypes, recordBody);
         records.add(record);
+        recordsMap.put(rowId, record);
       }
     } catch (IOException ex) {
       System.out.println("! Error while filling records from the page " + ex.getMessage());
@@ -803,7 +809,7 @@ private void fillIndexRecords(){
 
       IndexRecord record = new IndexRecord(i, DataType.get(dataType),noOfRowIds, indexValue
                                         , lstRowIds,leftPageNo,rightPage,pageNo,cellStart);
-     
+      
       if(indexValueDataType == DataType.TEXT || indexValueDataType == null)
         sIndexValues.add(record.getIndexNode().indexValue.fieldValue);
       else

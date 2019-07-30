@@ -229,20 +229,19 @@ public class DavisBasePrompt {
 		default:
 			System.out.println("! I didn't understand the command: \"" + userCommand + "\"");
 			break;
-		  }
+		}
 	}
 
 	public static void test() {
 		Scanner scan = new Scanner(System.in);
 
-		for (int i = 0; i < 35; i++)
-			parseUserCommand("insert into test (id , name) values (" + (i) + ",'Arun"+i +"' )");
+		for (int i = 1; i < 36; i++)
+			parseUserCommand("insert into test (id , name) values (" + (i) + ",'Arun" + i + "' )");
 
 		scan.nextLine();
 		parseUserCommand("show tables");
-      
-      scan.nextLine();
- 
+
+		scan.nextLine();
 
 	}
 
@@ -283,11 +282,11 @@ public class DavisBasePrompt {
 			}
 
 			if (metaData.recordCount > 0) {
-				BPlusOneTree bPlusOneTree = new BPlusOneTree(tableFile, metaData.rootPageNo,metaData.tableName);
+				BPlusOneTree bPlusOneTree = new BPlusOneTree(tableFile, metaData.rootPageNo, metaData.tableName);
 				for (int pageNo : bPlusOneTree.getAllLeaves()) {
 					Page page = new Page(tableFile, pageNo);
+					BTree bTree = new BTree(indexFile);
 					for (TableRecord record : page.getPageRecords()) {
-						BTree bTree = new BTree(indexFile);
 						bTree.insert(record.getAttributes().get(columnOrdinal), record.rowId);
 					}
 				}
@@ -556,7 +555,7 @@ public class DavisBasePrompt {
 
 		} catch (Exception ex) {
 			System.out.println("! Error while inserting record");
-			 System.out.println(ex);
+			System.out.println(ex);
 
 		}
 	}
@@ -671,7 +670,7 @@ public class DavisBasePrompt {
 		} catch (Exception e) {
 
 			System.out.println("! Error on creating Table");
-		   System.out.println(e.getMessage());
+			System.out.println(e.getMessage());
 			parseDelete("delete from table " + DavisBaseBinaryFile.tablesTable + " where table_name = '" + tableName
 					+ "' ");
 			parseDelete("delete from table " + DavisBaseBinaryFile.columnsTable + " where table_name = '" + tableName
@@ -687,7 +686,7 @@ public class DavisBasePrompt {
 	 */
 	private static void parseDelete(String deleteTableString) {
 		ArrayList<String> deleteTableTokens = new ArrayList<String>(Arrays.asList(deleteTableString.split(" ")));
-		int i = 0;
+
 		String tableName = "";
 
 		try {
@@ -711,6 +710,7 @@ public class DavisBasePrompt {
 			RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(tableName), "rw");
 
 			BPlusOneTree tree = new BPlusOneTree(tableFile, metaData.rootPageNo, metaData.tableName);
+			List<TableRecord> deletedRecords = new ArrayList<TableRecord>();
 			int count = 0;
 			for (int pageNo : tree.getAllLeaves(condition)) {
 				short deleteCountPerPage = 0;
@@ -721,10 +721,30 @@ public class DavisBasePrompt {
 							continue;
 					}
 
+					deletedRecords.add(record);
 					page.DeleteTableRecord(tableName,
 							Integer.valueOf(record.pageHeaderIndex - deleteCountPerPage).shortValue());
 					deleteCountPerPage++;
 					count++;
+				}
+			}
+
+			// update Index
+
+			// if there is no condition, all the rows will be deleted.
+			// so just delete the existing index files on the table and create new ones
+			if (condition == null) {
+				// TODO delete exisitng index files and create new ones;
+
+			} else {
+				for (int i = 0; i < metaData.columnNameAttrs.size(); i++) {
+					if (metaData.columnNameAttrs.get(i).hasIndex) {
+						RandomAccessFile indexFile = new RandomAccessFile(getNDXFilePath(tableName, metaData.columnNameAttrs.get(i).columnName), "rw");
+						BTree bTree = new BTree(indexFile);
+						for (TableRecord record : deletedRecords) {
+							bTree.delete(record.getAttributes().get(i),record.rowId);
+						}
+					}
 				}
 			}
 
@@ -752,12 +772,13 @@ public class DavisBasePrompt {
 			Condition condition = new Condition(DataType.TEXT);
 			String whereClause = query.substring(query.indexOf("where") + 6, query.length());
 			ArrayList<String> whereClauseTokens = null;
+
 			for (int i = 0; i < Condition.supportedOperators.length; i++) {
 				if (whereClause.contains(Condition.supportedOperators[i])) {
 					whereClauseTokens = new ArrayList<String>(
 							Arrays.asList(whereClause.split(Condition.supportedOperators[i])));
 					condition.setOperator(Condition.supportedOperators[i]);
-               break;
+					break;
 				}
 			}
 

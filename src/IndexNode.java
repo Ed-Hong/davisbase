@@ -12,5 +12,4 @@ public class IndexNode{
         this.rowids = rowids;
     }
 
-  
 }

@@ -207,7 +207,7 @@ public class TableMetaData{
         if(columnNameAttrs.get(i).isUnique)
         {
          condition.setConditionValue(row.get(i).fieldValue);
-            if(file.CountOf(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition) > 0){
+            if(file.recordExists(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition)){
           System.out.println("! Insert failed: Column "+ columnNameAttrs.get(i).columnName + " should be unique." );
                tableFile.close();
             return false;
