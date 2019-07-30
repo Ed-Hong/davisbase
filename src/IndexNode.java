@@ -4,7 +4,7 @@ public class IndexNode{
     public Attribute indexValue;
     public List<Integer> rowids;
     public boolean isInteriorNode;
-  
+    public int leftPageNo;
 
     public IndexNode(Attribute indexValue,List<Integer> rowids)
     {
@@ -12,5 +12,4 @@ public class IndexNode{
         this.rowids = rowids;
     }
 
-  
 }

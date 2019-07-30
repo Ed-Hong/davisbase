@@ -1,7 +1,8 @@
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.SortedSet;
+import java.util.List;
 
 public class BTree {
     Page root;
@@ -13,21 +14,21 @@ public class BTree {
     }
 
     //Recursively does a binary search using the given value and find the right pageNo to insert the index value
-    private int getPageNoToInsert(Page page, String value) {
+    private int getClosestPageNo(Page page, String value) {
         if (page.pageType == PageType.LEAFINDEX) {
             return page.pageNo;
         } else {
-            if (value.compareTo(page.indexValues.first()) < 0)
-                return getPageNoToInsert
-                    (new Page(binaryFile,page.indexValuePointer.get(page.indexValues.first()).leftPageNo),
+            if (Condition.compare(value , page.getIndexValues().get(0),page.indexValueDataType) < 0)
+                return getClosestPageNo
+                    (new Page(binaryFile,page.indexValuePointer.get(page.getIndexValues().get(0)).leftPageNo),
                         value);
-            else if(value.compareTo(page.indexValues.last()) > 0)
-                return getPageNoToInsert(
-                    new Page(binaryFile,page.indexValuePointer.get(page.indexValues.last()).leftPageNo),
+            else if(Condition.compare(value,page.getIndexValues().get(page.getIndexValues().size()-1),page.indexValueDataType) > 0)
+                return getClosestPageNo(
+                    new Page(binaryFile,page.indexValuePointer.get(page.getIndexValues().get(page.getIndexValues().size()-1)).rightPageNo),
                         value);
             else{
                 //perform binary search 
-                String closestValue = binarySearch(page.indexValues.toArray(new String[page.indexValues.size()]),value,value,0,page.indexValues.size());
+                String closestValue = binarySearch(page.getIndexValues().toArray(new String[page.getIndexValues().size()]),value,0,page.getIndexValues().size() -1,page.indexValueDataType);
 
                 if(closestValue.compareTo(value) < 0)
                 {
@@ -44,36 +45,173 @@ public class BTree {
         }
     }
 
+
+    public List<Integer> getRowIds(Condition condition)
+    {
+
+        List<Integer> rowIds = new ArrayList<>();
+
+        //get to the closest page number satisfying the condition
+        Page page = new Page(binaryFile,getClosestPageNo(root, condition.comparisonValue));
+    
+        //get the index values for that page
+        String[] indexValues= page.getIndexValues().toArray(new String[page.getIndexValues().size()]);
+        
+        OperatorType operationType = condition.getOperation();
+        
+        //store the rowids if the indexvalue is equal to the closest value
+        for(int i=0;i < indexValues.length;i++)
+        {
+            if(condition.checkCondition(page.indexValuePointer.get(indexValues[i]).getIndexNode().indexValue.fieldValue))
+                rowIds.addAll(page.indexValuePointer.get(indexValues[i]).rowIds);
+        }    
+
+        //recursivesly store all the rowids from the left side of the node
+        if(operationType == OperatorType.LESSTHAN || operationType == OperatorType.LESSTHANOREQUAL)
+        {
+           if(page.pageType == PageType.LEAFINDEX)
+               rowIds.addAll(getAllRowIdsLeftOf(page.parentPageNo,indexValues[0]));
+           else 
+                rowIds.addAll(getAllRowIdsLeftOf(page.pageNo,condition.comparisonValue));
+        }   
+
+         //recursivesly store all the rowids from the right side of the node
+        if(operationType == OperatorType.GREATERTHAN || operationType == OperatorType.GREATERTHANOREQUAL)
+        {
+         if(page.pageType == PageType.LEAFINDEX)
+            rowIds.addAll(getAllRowIdsRightOf(page.parentPageNo,indexValues[indexValues.length - 1]));
+            else 
+              rowIds.addAll(getAllRowIdsRightOf(page.pageNo,condition.comparisonValue));
+        }
+        
+        return rowIds;
+
+    }
+
+    private List<Integer> getAllRowIdsLeftOf(int pageNo, String indexValue)
+    {
+        List<Integer> rowIds = new ArrayList<>();
+        if(pageNo == -1)
+             return rowIds;
+        Page page = new Page(this.binaryFile,pageNo);
+        List<String> indexValues = Arrays.asList(page.getIndexValues().toArray(new String[page.getIndexValues().size()]));
+
+      
+        for(int i=0;i< indexValues.size() && Condition.compare(indexValues.get(i), indexValue, page.indexValueDataType) < 0 ;i++)
+        {
+           
+               rowIds.addAll(page.indexValuePointer.get(indexValues.get(i)).getIndexNode().rowids);
+               addAllChildRowIds(page.indexValuePointer.get(indexValues.get(i)).leftPageNo, rowIds);
+         
+        }
+         
+         if(page.indexValuePointer.get(indexValue)!= null)
+             addAllChildRowIds(page.indexValuePointer.get(indexValue).leftPageNo, rowIds);
+        
+
+        return rowIds;
+    }
+
+    private List<Integer> getAllRowIdsRightOf(int pageNo, String indexValue)
+    {
+        
+        List<Integer> rowIds = new ArrayList<>();
+
+        if(pageNo == -1)
+            return rowIds;
+        Page page = new Page(this.binaryFile,pageNo);
+        List<String> indexValues = Arrays.asList(page.getIndexValues().toArray(new String[page.getIndexValues().size()]));
+        for(int i=indexValues.size() - 1; i >= 0 && Condition.compare(indexValues.get(i), indexValue, page.indexValueDataType) > 0; i--)
+        {
+               rowIds.addAll(page.indexValuePointer.get(indexValues.get(i)).getIndexNode().rowids);
+               addAllChildRowIds(page.indexValuePointer.get(indexValues.get(i)).rightPageNo, rowIds);
+         }
+
+        if(page.indexValuePointer.get(indexValue)!= null)
+           addAllChildRowIds(page.indexValuePointer.get(indexValue).rightPageNo, rowIds);
+
+        return rowIds;
+    }
+
+    private void addAllChildRowIds(int pageNo,List<Integer> rowIds)
+    {
+        if(pageNo == -1)
+            return;
+        Page page = new Page(this.binaryFile, pageNo);
+            for (IndexRecord record :page.indexValuePointer.values())
+            {
+                rowIds.addAll(record.rowIds);
+                if(page.pageType == PageType.INTERIORINDEX)
+                 {
+                    addAllChildRowIds(record.leftPageNo, rowIds);
+                    addAllChildRowIds(record.rightPageNo, rowIds);
+                 }
+            }  
+    }
+
     //Inserts index value into the index page
     public void insert(Attribute attribute,int rowId)
     {
     try{
-        int pageNo = getPageNoToInsert(root, attribute.fieldValue) ;
+        int pageNo = getClosestPageNo(root, attribute.fieldValue) ;
         Page page = new Page(binaryFile, pageNo);
         page.addIndex(new IndexNode(attribute,Arrays.asList(rowId)));
         }
         catch(IOException e)
         {
-        System.out.println("! Error while insering " + attribute.fieldValue +" into index file");
+             System.out.println("! Error while insering " + attribute.fieldValue +" into index file");
         }
     }
 
-    private String binarySearch(String[] values,String searchValue,String closestValue,int start, int end)
+    public void delete(Attribute attribute, int rowid)
     {
-        if(end>=start)
+        
+        try{
+            int pageNo = getClosestPageNo(root, attribute.fieldValue) ;
+            Page page = new Page(binaryFile, pageNo);
+            
+            IndexNode tempNode = page.indexValuePointer.get(attribute.fieldValue).getIndexNode();
+            //remove the rowid from the index value
+            tempNode.rowids.remove(rowid);
+
+            page.DeleteIndex(tempNode);
+            page.addIndex(tempNode);
+
+            }
+            catch(IOException e)
+            {
+                 System.out.println("! Error while deleting " + attribute.fieldValue +" from index file");
+            }
+
+    }
+
+    private String binarySearch(String[] values,String searchValue,int start, int end , DataType dataType)
+    {
+
+        if(end - start <= 3)
         {
-            int mid = (end - start)/2 + start;
-            closestValue = values[mid];
-            if(values[mid].equals(searchValue))
-                return closestValue;
-
-            if(values[mid].compareTo(searchValue) < 0)
-                return binarySearch(values,searchValue,closestValue,mid + 1,end);
-            else 
-                return binarySearch(values,searchValue,closestValue,start,mid - 1);
+            int i =start;
+            for(i=start;i <end;i++){
+                if(Condition.compare(values[i], searchValue, dataType) < 0)
+                    continue;
+                else
+                    break;
+            }
+            return values[i];
         }
+        else{
+            
+                int mid = (end - start) / 2 + start;
+                if(values[mid].equals(searchValue))
+                    return values[mid];
 
-        return closestValue;
+                    if(Condition.compare(values[mid], searchValue, dataType) < 0)
+                    return binarySearch(values,searchValue,mid + 1,end,dataType);
+                else 
+                    return binarySearch(values,searchValue,start,mid - 1,dataType);
+            
+        }
+     
     }
 
 

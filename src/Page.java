@@ -25,8 +25,12 @@ public class Page {
   int availableSpace;
   RandomAccessFile binaryFile;
   List<TableInteriorRecord> leftChildren;
-  public TreeSet<String> indexValues;
+
+  public DataType indexValueDataType;
+  public TreeSet<Long> lIndexValues;
+  public TreeSet<String> sIndexValues;
   public HashMap<String,IndexRecord> indexValuePointer;
+  private Map<Integer,TableRecord> recordsMap;
   
   //Load a page from a file
   //Reads the page header from the page and fills the attributes
@@ -34,10 +38,12 @@ public class Page {
     try 
     {
       this.pageNo = pageNo;
-     
-      indexValues = new TreeSet<>();
+      indexValueDataType = null;
+      lIndexValues = new TreeSet<>();
+      sIndexValues = new TreeSet<>();
       indexValuePointer = new HashMap<String,IndexRecord>();
-      
+      recordsMap = new HashMap<>();
+
       this.binaryFile = file;
       lastRowId = 0;
       pageStart = DavisBaseBinaryFile.pageSize * pageNo;
@@ -65,6 +71,26 @@ public class Page {
     } catch (IOException ex) {
       System.out.println("! Error while reading the page " + ex.getMessage());
     }
+  }
+
+  public List<String> getIndexValues()
+  {
+      List<String> strIndexValues = new ArrayList<>();
+
+      if(sIndexValues.size() > 0)
+        strIndexValues.addAll(Arrays.asList(sIndexValues.toArray(new String[sIndexValues.size()])));
+       if(lIndexValues.size() > 0)
+      {
+        Long[] lArray = lIndexValues.toArray(new Long[lIndexValues.size()]);
+                for(int i=0;i<lArray.length;i++)
+        {
+          strIndexValues.add(lArray[i].toString());
+        }
+            }
+            
+              return strIndexValues;
+
+        
   }
 
   public boolean isRoot()
@@ -250,7 +276,7 @@ if(refreshTableRecords)
   }
 
 //adds a new record and updates the page header accordingly
-  private short addNewPageRecord(Byte[] recordHeader, Byte[] recordBody) throws IOException
+  private void addNewPageRecord(Byte[] recordHeader, Byte[] recordBody) throws IOException
   {
 
         //if there is no space in the current page
@@ -264,8 +290,7 @@ if(refreshTableRecords)
           else
           {  
             handleIndexOverflow();
-            return 99;
-          
+            return;
           }
         }
         catch(IOException e){
@@ -296,7 +321,6 @@ if(refreshTableRecords)
     binaryFile.seek(pageStart + 2); binaryFile.writeShort(noOfCells);
     
     availableSpace = contentStartOffset - 0x10 - (noOfCells *2);
-    return newCellStart;
     
     }
     
@@ -307,79 +331,156 @@ if(refreshTableRecords)
        //if currrent page is root
        if(parentPageNo == -1)
        {
-       //create a new interior Parent root Page
-       int newParentPageNo = addNewPage(binaryFile, PageType.INTERIORINDEX, pageNo , -1);
-       
+        //create a new interior Parent root Page
+        parentPageNo = addNewPage(binaryFile, PageType.INTERIORINDEX, pageNo , -1);
+       }
        //create a new left Page 
-       int newLeftLeafPageNo = addNewPage(binaryFile, PageType.LEAFINDEX, newParentPageNo, pageNo );
+       int newLeftLeafPageNo = addNewPage(binaryFile, PageType.LEAFINDEX,pageNo, parentPageNo);
 
        //set the new parentPage as parent for the current page 
-       setParent(newParentPageNo);
+       setParent(parentPageNo);
 
+       IndexNode incomingInsertTemp = this.incomingInsert;
        //Split the index records
-      
-       int mid = indexValues.size()/2;
-        String[] indexValuesTemp = indexValues.toArray(new String[indexValues.size()]);
-
-       IndexNode toInsertParentIndexNode = indexValuePointer.get(indexValuesTemp[mid]).getIndexNode();
-      
-       HashMap<String,IndexRecord> indexValuePointerTemp = (HashMap<String,IndexRecord>)indexValuePointer.clone();
-      
-       //Insert half the items into leftchild page
-       Page leftLeafPage = new Page(binaryFile,newLeftLeafPageNo);
-       for(int i=0;i<mid;i++)
-       {
-          leftLeafPage.addIndex(indexValuePointerTemp.get(indexValuesTemp[i]).getIndexNode());
-       }
-
-       //clean the current(rightleaf) page by resetting the page offsets and no of records, 
-       noOfCells = 0; contentStartOffset = Long.valueOf(pageStart+DavisBaseBinaryFile.pageSize).shortValue();
-       availableSpace = contentStartOffset - 0x10 - (noOfCells *2); //this page will now be treated as a new page
-       binaryFile.seek(pageStart + 2); binaryFile.writeShort(noOfCells);
-       binaryFile.seek(pageStart + 4); binaryFile.writeShort(contentStartOffset);
-       indexValues = new TreeSet<String>();
-       indexValuePointer = new HashMap<String,IndexRecord>();
-       
-       
-       //Insert the other half into right child page
-       for(int i=mid+1;i<indexValuesTemp.length;i++)
-       {  
-          addIndex(indexValuePointerTemp.get(indexValuesTemp[i]).getIndexNode());
-       }
      
+    // Insert half the items into leftchild page
+       Page leftLeafPage = new Page(binaryFile, newLeftLeafPageNo);
+        
+       //call the split method
+       IndexNode toInsertParentIndexNode = splitIndexRecordsBetweenPages(leftLeafPage);
+      
        //Insert Middle record to the parent page with left page No
 
-       Page newParentPage = new Page(binaryFile,newParentPageNo);
-
-       newParentPage.addIndex(toInsertParentIndexNode,newLeftLeafPageNo);
+       Page parentPage = new Page(binaryFile,parentPageNo);
 
        //shift page based on the incoming index value
-       int comparisonResult = incomingInsert.indexValue.fieldValue.compareTo(toInsertParentIndexNode.indexValue.fieldValue);
-       if( comparisonResult == 0)
+       int comparisonResult= Condition.compare(incomingInsertTemp.indexValue.fieldValue,toInsertParentIndexNode.indexValue.fieldValue,incomingInsert.indexValue.dataType);
+       
+       if(comparisonResult == 0)
        {
-          newParentPage.addIndex(toInsertParentIndexNode,newLeftLeafPageNo);
-          shiftPage(newParentPage);
+          toInsertParentIndexNode.rowids.addAll(incomingInsertTemp.rowids);
+          parentPage.addIndex(toInsertParentIndexNode,newLeftLeafPageNo);
+          shiftPage(parentPage);
+          return;
        }
-      else if(comparisonResult < 0){
-          leftLeafPage.addIndex(toInsertParentIndexNode);
+      else if(comparisonResult < 0)
+      {
+          leftLeafPage.addIndex(incomingInsertTemp);
           shiftPage(leftLeafPage);
        }
-       else{
-          addIndex(toInsertParentIndexNode);
-       }     
+       else
+       {
+          addIndex(incomingInsertTemp);
+       }
+
+       parentPage.addIndex(toInsertParentIndexNode,newLeftLeafPageNo);
+
       }
-       
-   
-      
-     }
+     
      else{
-      //TODO multilevel split - split on interior page
+      //multilevel split - split on interior page
+       //create a new interior Parent root Page
+       if(parentPageNo == -1)
+       {
+        parentPageNo = addNewPage(binaryFile, PageType.INTERIORINDEX, pageNo , -1);
+       }
+       //create a new Interior Page 
+       int newLeftInteriorPageNo = addNewPage(binaryFile, PageType.INTERIORINDEX, pageNo, parentPageNo );
+
+       
+       //set the new parentPage as parent for the current page 
+       setParent(parentPageNo);
+
+       IndexNode incomingInsertTemp = this.incomingInsert;
+       //Split the index records
+     
+        //Insert half the items into leftchild page
+        Page leftInteriorPage = new Page(binaryFile, newLeftInteriorPageNo);
+        
+        IndexNode toInsertParentIndexNode = splitIndexRecordsBetweenPages(leftInteriorPage);
+
+        Page parentPage = new Page(binaryFile,parentPageNo);
+
+       //shift page based on the incoming index value
+       int comparisonResult= Condition.compare(incomingInsertTemp.indexValue.fieldValue,toInsertParentIndexNode.indexValue.fieldValue,incomingInsert.indexValue.dataType);
+       
+
+       //add the middle Orphan to the left page
+       Page middleOrphan = new Page(binaryFile,toInsertParentIndexNode.leftPageNo);
+       middleOrphan.setParent(parentPageNo);
+       leftInteriorPage.setRightPageNo(middleOrphan.pageNo);
+   
+       if(comparisonResult == 0)
+       {
+          toInsertParentIndexNode.rowids.addAll(incomingInsertTemp.rowids);
+          parentPage.addIndex(toInsertParentIndexNode,newLeftInteriorPageNo);
+          shiftPage(parentPage);
+          return;
+       }
+       else if(comparisonResult < 0)
+       {
+        leftInteriorPage.addIndex(incomingInsertTemp);
+        shiftPage(leftInteriorPage);
+       }
+       else
+       {  
+          addIndex(incomingInsertTemp);
+       }     
+  
+       parentPage.addIndex(toInsertParentIndexNode,newLeftInteriorPageNo);
 
      }
      
      
      
     }
+
+
+    //copies half to left page and rewrite the current right page with remaining half records
+  // returns the middle index Node which should be added to the parent
+  private IndexNode splitIndexRecordsBetweenPages(Page newleftPage) throws IOException {
+
+    try{
+    int mid = getIndexValues().size() / 2;
+    String[] indexValuesTemp = getIndexValues().toArray(new String[getIndexValues().size()]);
+
+    IndexNode toInsertParentIndexNode = indexValuePointer.get(indexValuesTemp[mid]).getIndexNode();
+    toInsertParentIndexNode.leftPageNo = indexValuePointer.get(indexValuesTemp[mid]).leftPageNo;
+  
+    HashMap<String, IndexRecord> indexValuePointerTemp = (HashMap<String, IndexRecord>) indexValuePointer.clone();
+
+    for (int i = 0; i < mid; i++) {
+      newleftPage.addIndex(indexValuePointerTemp.get(indexValuesTemp[i]).getIndexNode(),indexValuePointerTemp.get(indexValuesTemp[i]).leftPageNo);
+    }
+
+    // clean the current(rightleaf) page by resetting the page offsets and no of
+    // records,
+    noOfCells = 0;
+    contentStartOffset = Long.valueOf(pageStart + DavisBaseBinaryFile.pageSize).shortValue();
+    availableSpace = contentStartOffset - 0x10 - (noOfCells * 2); // this page will now be treated as a new page
+    binaryFile.seek(pageStart + 2);
+    binaryFile.writeShort(noOfCells);
+    binaryFile.seek(pageStart + 4);
+    binaryFile.writeShort(contentStartOffset);
+    sIndexValues = new TreeSet<>();
+    lIndexValues = new TreeSet<>();
+    indexValuePointer = new HashMap<String, IndexRecord>();
+
+    //Insert the other half into right child page
+    for(int i=mid+1;i<indexValuesTemp.length;i++)
+    {  
+       addIndex(indexValuePointerTemp.get(indexValuesTemp[i]).getIndexNode(),indexValuePointerTemp.get(indexValuesTemp[i]).leftPageNo);
+    }
+  
+    return toInsertParentIndexNode;
+  }
+  catch(IOException e)
+  {
+    System.out.println("! Insert into Index File failed. Error while splitting index pages");
+    throw e;
+  }
+
+  }
 
   private void handleTableOverFlow() throws IOException
   {
@@ -496,7 +597,8 @@ if(refreshTableRecords)
     rightPage = newPage.rightPage;
     parentPageNo = newPage.parentPageNo;
     leftChildren = newPage.leftChildren;
-    indexValues = newPage.indexValues;
+    sIndexValues = newPage.sIndexValues;
+    lIndexValues = newPage.lIndexValues;
     indexValuePointer = newPage.indexValuePointer;
     records = newPage.records;
     pageStart = newPage.pageStart;
@@ -521,6 +623,13 @@ if(refreshTableRecords)
     this.rightPage = rightPageNo;
  }
 
+ public void DeleteIndex(IndexNode node) throws IOException
+ {
+    DeletePageRecord(indexValuePointer.get(node.indexValue.fieldValue).pageHeaderIndex);
+    fillIndexRecords();
+    refreshHeaderOffset();
+ }
+
  public void addIndex(IndexNode node) throws IOException
  {
     addIndex(node,-1);
@@ -530,15 +639,20 @@ if(refreshTableRecords)
  public void addIndex(IndexNode node,int leftPageNo) throws IOException
  {
   incomingInsert = node;
+  incomingInsert.leftPageNo = leftPageNo;
   List<Integer> rowIds = new ArrayList<>();
   
   //If index already exists, delete the old one, add the new rowid to the array and insert
-  if(indexValues.contains(node.indexValue.fieldValue))
+  List<String> ixValues = getIndexValues();
+  if(getIndexValues().contains(node.indexValue.fieldValue))
   {
       leftPageNo = indexValuePointer.get(node.indexValue.fieldValue).leftPageNo;
       rowIds = indexValuePointer.get(node.indexValue.fieldValue).rowIds;
       DeletePageRecord(indexValuePointer.get(node.indexValue.fieldValue).pageHeaderIndex);
-      indexValues.remove(node.indexValue.fieldValue);
+      if(indexValueDataType == DataType.TEXT || indexValueDataType == null)
+        sIndexValues.remove(node.indexValue.fieldValue);
+      else
+        lIndexValues.remove(Long.parseLong(node.indexValue.fieldValue));
   }
 
      rowIds.addAll(node.rowids);
@@ -586,7 +700,7 @@ private void refreshHeaderOffset()
 {
   try {
   binaryFile.seek(pageStart + 0x10);
-  for(String indexVal : indexValues)
+  for(String indexVal : getIndexValues())
   {
     binaryFile.writeShort(indexValuePointer.get(indexVal).pageOffset);
   }
@@ -602,7 +716,7 @@ private void refreshHeaderOffset()
     short payLoadSize = 0;
     byte noOfcolumns = 0;
     records = new ArrayList<TableRecord>();
-  
+    recordsMap =  new HashMap<>();
     try {
       for (short i = 0; i < noOfCells; i++) {
         binaryFile.seek(pageStart + 0x10 + (i *2) );
@@ -626,6 +740,7 @@ private void refreshHeaderOffset()
         TableRecord record = new TableRecord(i, rowId, cellStart
                                               , colDatatypes, recordBody);
         records.add(record);
+        recordsMap.put(rowId, record);
       }
     } catch (IOException ex) {
       System.out.println("! Error while filling records from the page " + ex.getMessage());
@@ -658,7 +773,8 @@ private void fillLeftChildren(){
 
 private void fillIndexRecords(){
   try {
-    indexValues = new TreeSet<String>();
+    lIndexValues = new TreeSet<>();
+    sIndexValues = new TreeSet<>();
     indexValuePointer = new HashMap<>();
 
     int leftPageNo = -1;
@@ -678,6 +794,9 @@ private void fillIndexRecords(){
 
       noOfRowIds = binaryFile.readByte();
       dataType = binaryFile.readByte();
+     
+      if(indexValueDataType == null && DataType.get(dataType) != DataType.NULL)
+        indexValueDataType = DataType.get(dataType);
 
       byte[] indexValue = new byte[DataType.getLength(dataType)];
       binaryFile.read(indexValue);
@@ -690,7 +809,12 @@ private void fillIndexRecords(){
 
       IndexRecord record = new IndexRecord(i, DataType.get(dataType),noOfRowIds, indexValue
                                         , lstRowIds,leftPageNo,rightPage,pageNo,cellStart);
-      indexValues.add(record.getIndexNode().indexValue.fieldValue);
+      
+      if(indexValueDataType == DataType.TEXT || indexValueDataType == null)
+        sIndexValues.add(record.getIndexNode().indexValue.fieldValue);
+      else
+        lIndexValues.add(Long.parseLong(record.getIndexNode().indexValue.fieldValue));
+
       indexValuePointer.put(record.getIndexNode().indexValue.fieldValue, record);
 
     }
