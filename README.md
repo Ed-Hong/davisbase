@@ -3,9 +3,10 @@
 
 ----------
 
-## Features required:
+## Features Required:
 * Primary Key column definition as part of Create Table.
     * Only need to support Primary Key on a single column
+    * Test attempting to insert duplicate key
 * Create Index (only need to support creating an index on a single column)
     * Note that when a table is created with a column designated as the primary key, an index will be implicitly and automatically created on that column.
 * Update record
@@ -19,9 +20,13 @@
     * (1) Remove a table file, (2) all of its associated indexes, and (3) references to the table in the meta-data tables.
 * Querying using WHERE clause ie: SELECT * FROM table WHERE column = value;
 
-----------
 
-## Bugs:
+## Extra Features (if we have time):
+* Batch capability (Matt is currently working on this).
+* Support for AND, OR within WHERE clause, allowing for multi-column queries.
+* Allowing omission of a condition for update/delete?
+* FK constraints.
+* Join?
 
 ----------
 
