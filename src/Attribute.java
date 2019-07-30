@@ -100,7 +100,7 @@ public class Attribute
                 break;
               case TEXT: this.fieldValuebyte = fieldValue.getBytes(); break;
                default:
-               this.fieldValuebyte = fieldValue.getBytes(); break;
+               this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
             }
             this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);  
         } catch (Exception e) {

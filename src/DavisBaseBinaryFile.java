@@ -37,48 +37,65 @@ public class DavisBaseBinaryFile {
       this.file = file;
    }
 
-   public int CountOf(TableMetaData tablemetaData, List<String> columNames, Condition condition) throws IOException{
+   public boolean recordExists(TableMetaData tablemetaData, List<String> columNames, Condition condition) throws IOException{
 
-   BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo);
+   BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo, tablemetaData.tableName);
 
-   int rowCount = 0;
    
    for(Integer pageNo :  bPlusOneTree.getAllLeaves(condition))
    {
          Page page = new Page(file,pageNo);
-         for(TableRecord record : page.records)
+         for(TableRecord record : page.getPageRecords())
          {
             if(condition!=null)
             {
                if(!condition.checkCondition(record.getAttributes().get(condition.columnOrdinal).fieldValue))
                   continue;
             }
-            rowCount++;
+           return true;
          }
    }
-   return rowCount;
+   return false;
 
    }
 
-   public void updateRecords(TableMetaData tablemetaData,Condition condition, List<String> columNames, List<Byte[]> newValues) throws IOException
+
+   
+   public void updateRecords(TableMetaData tablemetaData,Condition condition, 
+                  List<String> columNames, List<String> newValues) throws IOException
    {
       int count = 0;
+
+
       List<Integer> ordinalPostions = tablemetaData.getOrdinalPostions(columNames);
 
       //map new values to column ordinal position
       int k=0;
-      Map<Integer,Byte[]> newValueMap = new HashMap<>();
+      Map<Integer,Attribute> newValueMap = new HashMap<>();
 
-      for(Byte[] newValue:newValues){
-         newValueMap.put(ordinalPostions.get(k++), newValue);
+      for(String strnewValue:newValues){
+           int index = ordinalPostions.get(k);
+
+         try{
+                newValueMap.put(index,
+                      new Attribute(tablemetaData.columnNameAttrs.get(index).dataType,strnewValue));
+                      }
+                      catch (Exception e) {
+							System.out.println("! Invalid data format for " + tablemetaData.columnNames.get(index) + " values: "
+									+ strnewValue);
+							return;
+						}
+
+         k++;
       }
 
-      BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo);
+      BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo,tablemetaData.tableName);
    
       for(Integer pageNo :  bPlusOneTree.getAllLeaves(condition))
       {
+            short deleteCountPerPage = 0;
             Page page = new Page(file,pageNo);
-            for(TableRecord record : page.records)
+            for(TableRecord record : page.getPageRecords())
             {
                if(condition!=null)
                {
@@ -88,14 +105,24 @@ public class DavisBaseBinaryFile {
                count++;
                for(int i :newValueMap.keySet())
                {
-                  if(record.getAttributes().get(i).dataType !=DataType.TEXT || (record.getAttributes().get(i).fieldValue.length() == newValueMap.get(i).toString().length())){
-                     page.updateRecord(record,i,newValueMap.get(i));
+                  if((record.getAttributes().get(i).dataType == DataType.TEXT
+                   && record.getAttributes().get(i).fieldValue.length() == newValueMap.get(i).fieldValue.length())
+                     || (record.getAttributes().get(i).dataType != DataType.NULL && record.getAttributes().get(i).dataType != DataType.TEXT)
+                  ){
+                     page.updateRecord(record,i,newValueMap.get(i).fieldValueByte);
                   }
                   else{
                    //Delete the record and insert a new one, update indexes
-
-                     page.DeleteTableRecord(tablemetaData.tableName ,record.pageHeaderIndex);
-                     page.addTableRow(tablemetaData.tableName , record.getAttributes());
+                     
+                     page.DeleteTableRecord(tablemetaData.tableName ,
+                     Integer.valueOf(record.pageHeaderIndex - deleteCountPerPage).shortValue());
+                     deleteCountPerPage++;
+                     List<Attribute> attrs = record.getAttributes();
+                     Attribute attr = attrs.get(i);
+                     attrs.remove(i);
+                     attr = newValueMap.get(i);
+                     attrs.add(i, attr);
+                     page.addTableRow(tablemetaData.tableName , attrs);
                 } 
                }
              }
@@ -105,7 +132,6 @@ public class DavisBaseBinaryFile {
           System.out.println("* " + count+" record(s) updated.");
 
    }
-
 
    public void selectRecords(TableMetaData tablemetaData, List<String> columNames, Condition condition) throws IOException{
    
@@ -141,18 +167,13 @@ public class DavisBaseBinaryFile {
        System.out.println();
        System.out.println(DavisBasePrompt.line("-",totalTablePrintLength));
 
-   BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo);
+   BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo,tablemetaData.tableName);
   
-
-  
-
-
-
    String currentValue ="";
    for(Integer pageNo : bPlusOneTree.getAllLeaves(condition))
    {
          Page page = new Page(file,pageNo);
-         for(TableRecord record : page.records)
+         for(TableRecord record : page.getPageRecords())
          {
             if(condition!=null)
             {
@@ -179,15 +200,7 @@ public class DavisBaseBinaryFile {
    System.out.println();
 
    }
-     
-
-   public void InsertRecord(int pageNo,TableRecord record) {
-  
-
-
-   }
-   
-  
+       
 
    // Find the root page manually
    public static int getRootPageNo(RandomAccessFile binaryfile) {
@@ -246,14 +259,14 @@ public class DavisBaseBinaryFile {
          Page.addNewPage(davisbaseTablesCatalog, PageType.LEAF, -1, -1);
          Page page = new Page(davisbaseTablesCatalog,currentPageNo);
 
-         currentPageNo = page.addTableRow(tablesTable,Arrays.asList(new Attribute[] { 
+         page.addTableRow(tablesTable,Arrays.asList(new Attribute[] { 
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.tablesTable),
                new Attribute(DataType.INT, "2"), 
                new Attribute(DataType.SMALLINT, "0"),
                new Attribute(DataType.SMALLINT, "0") 
                }));
 
-        currentPageNo = page.addTableRow(tablesTable,Arrays.asList(new Attribute[] {
+         page.addTableRow(tablesTable,Arrays.asList(new Attribute[] {
                new Attribute(DataType.TEXT, DavisBaseBinaryFile.columnsTable),
                 new Attribute(DataType.INT, "11"),
                new Attribute(DataType.SMALLINT, "0"),
@@ -263,6 +276,7 @@ public class DavisBaseBinaryFile {
       } catch (Exception e) {
          out.println("Unable to create the database_tables file");
          out.println(e);
+         
 
       }
 
@@ -276,10 +290,10 @@ public class DavisBaseBinaryFile {
          short ordinal_position = 1;
 
          //Add new columns to davisbase_tables
-         page.addNewColumn(tablesTable, new ColumnInfo(DataType.TEXT, "table_name", true, false, ordinal_position++));
-         page.addNewColumn(tablesTable, new ColumnInfo(DataType.SMALLINT, "record_count", false, false, ordinal_position++));
-         page.addNewColumn(tablesTable, new ColumnInfo(DataType.SMALLINT, "avg_length", false, false, ordinal_position++));
-         page.addNewColumn(tablesTable, new ColumnInfo(DataType.SMALLINT, "root_page", false, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(tablesTable,DataType.TEXT, "table_name", true, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(tablesTable,DataType.INT, "record_count", false, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(tablesTable,DataType.SMALLINT, "avg_length", false, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(tablesTable,DataType.SMALLINT, "root_page", false, false, ordinal_position++));
       
        
 
@@ -287,13 +301,13 @@ public class DavisBaseBinaryFile {
 
          ordinal_position = 1;
 
-         page.addNewColumn(columnsTable, new ColumnInfo(DataType.TEXT, "table_name", false, false, ordinal_position++));
-         page.addNewColumn(columnsTable, new ColumnInfo(DataType.TEXT, "column_name", false, false, ordinal_position++));
-         page.addNewColumn(columnsTable, new ColumnInfo(DataType.SMALLINT, "data_type", false, false, ordinal_position++));
-         page.addNewColumn(columnsTable, new ColumnInfo(DataType.SMALLINT, "ordinal_position", false, false, ordinal_position++));
-         page.addNewColumn(columnsTable, new ColumnInfo(DataType.TEXT, "is_nullable", false, false, ordinal_position++));
-         page.addNewColumn(columnsTable, new ColumnInfo(DataType.SMALLINT, "column_key", false, false, ordinal_position++));
-         page.addNewColumn(columnsTable, new ColumnInfo(DataType.SMALLINT, "is_unique", false, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(columnsTable,DataType.TEXT, "table_name", false, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(columnsTable,DataType.TEXT, "column_name", false, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(columnsTable,DataType.SMALLINT, "data_type", false, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(columnsTable,DataType.SMALLINT, "ordinal_position", false, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(columnsTable,DataType.TEXT, "is_nullable", false, false, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(columnsTable,DataType.SMALLINT, "column_key", false, true, ordinal_position++));
+         page.addNewColumn(new ColumnInfo(columnsTable,DataType.SMALLINT, "is_unique", false, false, ordinal_position++));
 
          davisbaseColumnsCatalog.close();
          dataStoreInitialized = true;
