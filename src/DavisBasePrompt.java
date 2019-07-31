@@ -260,7 +260,7 @@ public class DavisBasePrompt {
 					.substring(createIndexString.indexOf("(") + 1, createIndexString.indexOf(")")).trim();
 
 			// check if the index already exists
-			if (new File(DavisBasePrompt.getNDXFilePath(tableName, condition.columnName)).exists()) {
+			if (new File(DavisBasePrompt.getNDXFilePath(tableName, columnName)).exists()) {
 				System.out.println("! Index already exists");
 				return;
 			}
