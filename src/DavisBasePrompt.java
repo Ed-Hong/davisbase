@@ -259,6 +259,12 @@ public class DavisBasePrompt {
 			String columnName = createIndexString
 					.substring(createIndexString.indexOf("(") + 1, createIndexString.indexOf(")")).trim();
 
+			// check if the index already exists
+			if (new File(DavisBasePrompt.getNDXFilePath(tableName, condition.columnName)).exists()) {
+				System.out.println("! Index already exists");
+				return;
+			}
+			
 			// create index file
 			RandomAccessFile indexFile = new RandomAccessFile(getNDXFilePath(tableName, columnName), "rw");
 			Page.addNewPage(indexFile, PageType.LEAFINDEX, -1, -1);

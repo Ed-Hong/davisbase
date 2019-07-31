@@ -31,7 +31,7 @@
 ----------
 
 ## Bugs:
-* None as of 7/30/2019
+* ~~CREATE INDEX should not be permitted when an index for the column already exists.~~ FIXED
 
 ----------
 
