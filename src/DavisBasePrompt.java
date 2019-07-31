@@ -234,9 +234,12 @@ public class DavisBasePrompt {
 
 	public static void test() {
 		Scanner scan = new Scanner(System.in);
-
-		for (int i = 1; i < 36; i++)
-			parseUserCommand("insert into test (id , name) values (" + (i) + ",'Arun" + i + "' )");
+parseUserCommand("create table test (id int, name text)");
+scan.nextLine();
+parseUserCommand("create index on test (name)");
+scan.nextLine();
+		for (int i = 1; i < 35; i++)
+			parseUserCommand("insert into test (id , name) values (" + (i) + ",'arun" + i + "' )");
 
 		scan.nextLine();
 		parseUserCommand("show tables");
@@ -259,10 +262,7 @@ public class DavisBasePrompt {
 			String columnName = createIndexString
 					.substring(createIndexString.indexOf("(") + 1, createIndexString.indexOf(")")).trim();
 
-			// create index file
-			RandomAccessFile indexFile = new RandomAccessFile(getNDXFilePath(tableName, columnName), "rw");
-			Page.addNewPage(indexFile, PageType.LEAFINDEX, -1, -1);
-
+	
 			RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(tableName), "rw");
 
 			TableMetaData metaData = new TableMetaData(tableName);
@@ -280,6 +280,12 @@ public class DavisBasePrompt {
 				tableFile.close();
 				return;
 			}
+         
+             
+         // create index file
+			RandomAccessFile indexFile = new RandomAccessFile(getNDXFilePath(tableName, columnName), "rw");
+			Page.addNewPage(indexFile, PageType.LEAFINDEX, -1, -1);
+
 
 			if (metaData.recordCount > 0) {
 				BPlusOneTree bPlusOneTree = new BPlusOneTree(tableFile, metaData.rootPageNo, metaData.tableName);
@@ -735,6 +741,9 @@ public class DavisBasePrompt {
 			// so just delete the existing index files on the table and create new ones
 			if (condition == null) {
 				// TODO delete exisitng index files and create new ones;
+				
+
+
 
 			} else {
 				for (int i = 0; i < metaData.columnNameAttrs.size(); i++) {

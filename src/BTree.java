@@ -74,6 +74,8 @@ public class BTree {
            else 
                 rowIds.addAll(getAllRowIdsLeftOf(page.pageNo,condition.comparisonValue));
         }   
+        
+    //    System.out.println(Arrays.toString(rowIds.toArray()));
 
          //recursivesly store all the rowids from the right side of the node
         if(operationType == OperatorType.GREATERTHAN || operationType == OperatorType.GREATERTHANOREQUAL)
@@ -124,7 +126,9 @@ public class BTree {
         for(int i=indexValues.size() - 1; i >= 0 && Condition.compare(indexValues.get(i), indexValue, page.indexValueDataType) > 0; i--)
         {
                rowIds.addAll(page.indexValuePointer.get(indexValues.get(i)).getIndexNode().rowids);
+       //        System.out.println(Arrays.toString(rowIds.toArray()));
                addAllChildRowIds(page.indexValuePointer.get(indexValues.get(i)).rightPageNo, rowIds);
+    //           System.out.println(Arrays.toString(rowIds.toArray()));
          }
 
         if(page.indexValuePointer.get(indexValue)!= null)
