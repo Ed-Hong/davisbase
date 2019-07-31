@@ -3,6 +3,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -345,15 +346,13 @@ if(refreshTableRecords)
      
     // Insert half the items into leftchild page
        Page leftLeafPage = new Page(binaryFile, newLeftLeafPageNo);
-        
        //call the split method
        IndexNode toInsertParentIndexNode = splitIndexRecordsBetweenPages(leftLeafPage);
       
        //Insert Middle record to the parent page with left page No
 
        Page parentPage = new Page(binaryFile,parentPageNo);
-       parentPage.setRightPageNo(this.pageNo);
-       
+     
        //shift page based on the incoming index value
        int comparisonResult= Condition.compare(incomingInsertTemp.indexValue.fieldValue,toInsertParentIndexNode.indexValue.fieldValue,incomingInsert.indexValue.dataType);
        
@@ -425,7 +424,6 @@ if(refreshTableRecords)
         IndexNode toInsertParentIndexNode = splitIndexRecordsBetweenPages(leftInteriorPage);
 
         Page parentPage = new Page(binaryFile,parentPageNo);
-        parentPage.setRightPageNo(this.pageNo);
        //shift page based on the incoming index value
        int comparisonResult= Condition.compare(incomingInsertTemp.indexValue.fieldValue,toInsertParentIndexNode.indexValue.fieldValue,incomingInsert.indexValue.dataType);
        
@@ -684,7 +682,10 @@ if(refreshTableRecords)
   if(getIndexValues().contains(node.indexValue.fieldValue))
   {
       leftPageNo = indexValuePointer.get(node.indexValue.fieldValue).leftPageNo;
+      incomingInsert.leftPageNo = leftPageNo;
       rowIds = indexValuePointer.get(node.indexValue.fieldValue).rowIds;
+      rowIds.addAll(incomingInsert.rowids);
+      incomingInsert.rowids = rowIds;
       DeletePageRecord(indexValuePointer.get(node.indexValue.fieldValue).pageHeaderIndex);
       if(indexValueDataType == DataType.TEXT || indexValueDataType == null)
         sIndexValues.remove(node.indexValue.fieldValue);
@@ -693,6 +694,8 @@ if(refreshTableRecords)
   }
 
      rowIds.addAll(node.rowids);
+
+     rowIds = new ArrayList<>(new HashSet<>(rowIds));
 
     List<Byte> recordHead = new ArrayList<>(); 
     List<Byte> recordBody = new ArrayList<>();

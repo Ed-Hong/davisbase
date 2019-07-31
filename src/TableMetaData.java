@@ -62,7 +62,7 @@ public class TableMetaData{
             }
             
          } catch (Exception e) {
-            System.out.println("! Error while checking Table " + tableName + " exists.");
+           // System.out.println("! Error while checking Table " + tableName + " exists.");
             //debug: System.out.println(e);
          }
     }

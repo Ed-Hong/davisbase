@@ -234,14 +234,17 @@ public class DavisBasePrompt {
 
 	public static void test() {
 		Scanner scan = new Scanner(System.in);
-parseUserCommand("create table test (id int, name text)");
-scan.nextLine();
-parseUserCommand("create index on test (name)");
-scan.nextLine();
+      parseUserCommand("create table test (id int, name text)");
+      scan.nextLine();
+      parseUserCommand("create index on test (name)");
+      scan.nextLine();
 		for (int i = 1; i < 35; i++)
-			parseUserCommand("insert into test (id , name) values (" + (i) + ",'arun" + i + "' )");
+		{	
+   //   System.out.println(i);
+      parseUserCommand("insert into test (id , name) values (" + (i) + ", "+ i + "'arun' )");
 
-		scan.nextLine();
+		//scan.nextLine();
+      }
 		parseUserCommand("show tables");
 
 		scan.nextLine();
@@ -358,6 +361,11 @@ scan.nextLine();
 		}
 
 		TableMetaData tableMetaData = new TableMetaData(table_name);
+      if(!tableMetaData.tableExists){
+         System.out.println("! Table does not exist");
+         return;
+      }
+      
 		Condition condition = null;
 		try {
 
@@ -790,15 +798,23 @@ scan.nextLine();
 			// WHERE NOT column operator value
 			if (whereClauseTokens.get(0).equalsIgnoreCase("not")) {
 				condition.setNegation(true);
-				condition.setColumName(whereClauseTokens.get(1).trim());
-				condition.setOperator(whereClauseTokens.get(2).trim());
-				condition.setConditionValue(whereClauseTokens.get(3).trim());
-			} else {	// WHERE column operator value
-				condition.setColumName(whereClauseTokens.get(0).trim());
-				condition.setOperator(whereClauseTokens.get(1).trim());
-				condition.setConditionValue(whereClauseTokens.get(2).trim());
+          }
+        
+          
+          for (int i = 0; i < Condition.supportedOperators.length; i++) {
+				if (whereClause.contains(Condition.supportedOperators[i])) {
+					whereClauseTokens = new ArrayList<String>(
+							Arrays.asList(whereClause.split(Condition.supportedOperators[i])));
+				{	condition.setOperator(Condition.supportedOperators[i]);
+			   	    condition.setConditionValue(whereClauseTokens.get(1).trim());
+					condition.setColumName(whereClauseTokens.get(0).trim());
+					break;
+				}
+				
+				}
 			}
-			
+          
+									
 			if (tableMetaData.tableExists
 					&& tableMetaData.columnExists(new ArrayList<String>(Arrays.asList(condition.columnName)))) {
 				condition.columnOrdinal = tableMetaData.columnNames.indexOf(condition.columnName);

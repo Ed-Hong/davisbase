@@ -120,7 +120,11 @@ public class BPlusOneTree {
         if (rowId < page.leftChildren.get(index).rowId) {
             return getPageNo(rowId, new Page(binaryFile, page.leftChildren.get(index).leftChildPageNo));
         } else {
-            return getPageNo(rowId, new Page(binaryFile, page.rightPage));
+        if( index+1 < page.leftChildren.size())
+            return getPageNo(rowId, new Page(binaryFile, page.leftChildren.get(index+1).leftChildPageNo));
+        else
+           return getPageNo(rowId, new Page(binaryFile, page.rightPage));
+
 
         }
     }
