@@ -1,3 +1,4 @@
+import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.FileReader;
@@ -263,17 +264,41 @@ public class DavisBasePrompt {
 		System.out.println("STUB: This is the dropTable method.");
 		System.out.println("\tParsing the string:\"" + dropTableString + "\"");
 		
-		
+		String[] tokens = dropTableString.split(" ");
+		if(!(tokens[0].trim().equalsIgnoreCase("DROP") && tokens[1].trim().equalsIgnoreCase("TABLE"))) {
+			System.out.println("Error");
+			return;
+		}
+
 		ArrayList<String> dropTableTokens = new ArrayList<String>(Arrays.asList(dropTableString.split(" ")));
-		String tableName = dropTableTokens.get(1);
+		String tableName = dropTableTokens.get(2);
+		
+
 		parseDelete("delete from table "+ DavisBaseBinaryFile.tablesTable + " where table_name = '"+tableName+"' ");
 		parseDelete("delete from table "+ DavisBaseBinaryFile.columnsTable + " where table_name = '"+tableName+"' ");
-		File file = new File("data/"+tableName+".tbl");
-        if(file.delete()){
-            System.out.println("deleted");
-		}else System.out.println("doesn't exist");
+		File tableFile = new File("data/"+tableName+".tbl");
+        if(tableFile.delete()){
+            System.out.println("table deleted");
+		}else System.out.println("table doesn't exist");
 		
 		
+		File f = new File("data/");
+		File[] matchingFiles = f.listFiles(new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				return name.startsWith(tableName) && name.endsWith("ndx");
+			}
+		});
+		boolean iFlag = false;
+		for (File file : matchingFiles) {
+			if(file.delete()){
+				iFlag = true;
+				System.out.println("index deleted");
+			}
+		}
+		if(iFlag)
+			System.out.println("drop "+tableName);
+		else
+			System.out.println("index doesn't exist");
 		
 		
 
