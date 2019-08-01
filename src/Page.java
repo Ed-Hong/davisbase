@@ -606,6 +606,11 @@ if(refreshTableRecords)
 //Add left child for the current page
   private int addLeftTableChild(int leftChildPageNo,int rowId) throws IOException
   {
+    for( TableInteriorRecord intRecord: leftChildren)
+    {
+      if(intRecord.rowId == rowId)
+        return pageNo;
+    }
     if(pageType == PageType.INTERIOR)
     {
       List<Byte> recordHeader= new ArrayList<>();

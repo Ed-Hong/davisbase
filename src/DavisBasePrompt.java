@@ -271,7 +271,6 @@ public class DavisBasePrompt {
 				return;
 			}
 			
-		
 			RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(tableName), "rw");
 
 			TableMetaData metaData = new TableMetaData(tableName);
@@ -442,16 +441,57 @@ public class DavisBasePrompt {
 
 		}
 
+	
+
+
 		try {
 			RandomAccessFile file = new RandomAccessFile(getTBLFilePath(table_name), "rw");
 			DavisBaseBinaryFile binaryFile = new DavisBaseBinaryFile(file);
-			binaryFile.updateRecords(metadata, condition, columnsToUpdate, valueToUpdate);
-			file.close();
-		} catch (Exception e) {
-			out.println("Unable to update the " + table_name + " file");
-			out.println(e);
+			int noOfRecordsupdated = binaryFile.updateRecords(metadata, condition, columnsToUpdate, valueToUpdate);
+		
+			if(noOfRecordsupdated > 0)
+			{
+			List<Integer> allRowids = new ArrayList<>();
+		for(ColumnInfo colInfo : metadata.columnNameAttrs)
+		{
+			for(int i=0;i<columnsToUpdate.size();i++)
+			if(colInfo.columnName.equals(columnsToUpdate.get(i)) &&  colInfo.hasIndex)
+			{
+				
+					// when there is no condition, All rows in the column gets updated the index value point to all rowids
+					if(condition == null) 
+					{
+						//Delete the index file. TODO
 
+					if(allRowids.size() == 0)
+					{
+						BPlusOneTree bPlusOneTree = new BPlusOneTree(file, metadata.rootPageNo, metadata.tableName);
+						for (int pageNo : bPlusOneTree.getAllLeaves()) {
+							Page currentPage = new Page(file, pageNo);
+							for (TableRecord record : currentPage.getPageRecords()) {
+								allRowids.add(record.rowId);
+							}
+						}
+					}
+					//create a new index value and insert 1 index value with all rowids
+						RandomAccessFile indexFile = new RandomAccessFile(getNDXFilePath(table_name, columnsToUpdate.get(i)),
+								"rw");
+						Page.addNewPage(indexFile, PageType.LEAFINDEX, -1, -1);
+						BTree bTree = new BTree(indexFile);
+						bTree.insert(new Attribute(colInfo.dataType,valueToUpdate.get(i)), allRowids);
+					}
+			}
 		}
+	}
+
+		file.close();
+	
+	} catch (Exception e) {
+		out.println("Unable to update the " + table_name + " file");
+		out.println(e);
+
+	}
+		
 
 	}
 
@@ -753,7 +793,8 @@ public class DavisBasePrompt {
 			// if there is no condition, all the rows will be deleted.
 			// so just delete the existing index files on the table and create new ones
 			if (condition == null) {
-				// TODO delete exisitng index files and create new ones;
+				// TODO delete exisitng index files for the table 
+				//and create new ones;
 				
 
 

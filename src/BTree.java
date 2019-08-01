@@ -49,7 +49,6 @@ public class BTree {
 
     public List<Integer> getRowIds(Condition condition)
     {
-
         List<Integer> rowIds = new ArrayList<>();
 
         //get to the closest page number satisfying the condition
@@ -154,18 +153,23 @@ public class BTree {
             }  
     }
 
+    public void insert(Attribute attribute,List<Integer> rowIds)
+    {
+        try{
+            int pageNo = getClosestPageNo(root, attribute.fieldValue) ;
+            Page page = new Page(binaryFile, pageNo);
+            page.addIndex(new IndexNode(attribute,rowIds));
+            }
+            catch(IOException e)
+            {
+                 System.out.println("! Error while insering " + attribute.fieldValue +" into index file");
+            }
+    }
+
     //Inserts index value into the index page
     public void insert(Attribute attribute,int rowId)
     {
-    try{
-        int pageNo = getClosestPageNo(root, attribute.fieldValue) ;
-        Page page = new Page(binaryFile, pageNo);
-        page.addIndex(new IndexNode(attribute,Arrays.asList(rowId)));
-        }
-        catch(IOException e)
-        {
-             System.out.println("! Error while insering " + attribute.fieldValue +" into index file");
-        }
+        insert(attribute,Arrays.asList(rowId));
     }
 
     public void delete(Attribute attribute, int rowid)

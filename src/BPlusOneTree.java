@@ -131,7 +131,7 @@ public class BPlusOneTree {
 
     private int binarySearch(List<TableInteriorRecord> values, int searchValue, int start, int end) {
 
-        if(end - start <= 3)
+        if(end - start <= 2)
         {
             int i =start;
             for(i=start;i <end;i++){
