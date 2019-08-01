@@ -1,6 +1,7 @@
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.SortedMap;
@@ -135,6 +136,9 @@ public class DavisBasePrompt {
 			out.println("SELECT <column_list> FROM <table_name> [WHERE <condition>];");
 			out.println("\tDisplay table records whose optional <condition>");
 			out.println("\tis <column_name> = <value>.\n");
+
+			out.println("SOURCE filename;");
+			out.println("\tProcess a batch file of commands.\n");
 
 			out.println("VERSION;");
 			out.println("\tDisplay the program version.\n");
@@ -620,13 +624,24 @@ public class DavisBasePrompt {
 
 	}
 	
+	/**
+	 * Batch process commands
+	 * @param insertFile is the filename to be processed
+	 */
 	private static void parseSource(String insertFile) {
 		String command;
+		insertFile.replaceAll(";", "");	//Prevents the program from reading the endline ";" as part of the filename
 		Scanner read = new Scanner (new File(insertfile));
-		read.useDelimiter(";");
-		while (read.hasNext()) {
-			command = read.next();
-			parseUserCommand(command + ";");
+		try {
+			read.useDelimiter(";");
+			while (read.hasNext()) {
+				command = read.next();
+				parseUserCommand(command + ";");
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
 		}
 		read.close();
 	}
