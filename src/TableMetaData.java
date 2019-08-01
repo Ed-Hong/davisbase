@@ -35,12 +35,12 @@ public class TableMetaData{
             //get the root page of the table
             int rootPageNo = DavisBaseBinaryFile.getRootPageNo(davisbaseTablesCatalog);
            
-            BPlusOneTree bplusOneTree = new BPlusOneTree(davisbaseTablesCatalog, rootPageNo);
+            BPlusOneTree bplusOneTree = new BPlusOneTree(davisbaseTablesCatalog, rootPageNo,tableName);
             //search through all leaf papges in davisbase_tables
             for (Integer pageNo : bplusOneTree.getAllLeaves()) {
                Page page = new Page(davisbaseTablesCatalog, pageNo);
                //search theough all the records in each page
-               for (TableRecord record : page.records) {
+               for (TableRecord record : page.getPageRecords()) {
                    //if the record with table is found, get the root page No and record count; break the loop
                   if (new String(record.getAttributes().get(0).fieldValue).equals(tableName)) {
                     this.rootPageNo = Integer.parseInt(record.getAttributes().get(3).fieldValue);
@@ -62,8 +62,8 @@ public class TableMetaData{
             }
             
          } catch (Exception e) {
-            System.out.println("Error while checking Table " + tableName + " exists.");
-            System.out.println(e);
+            System.out.println("! Error while checking Table " + tableName + " exists.");
+            //debug: System.out.println(e);
          }
     }
 
@@ -87,7 +87,7 @@ public class TableMetaData{
            columnData = new ArrayList<>();
            columnNameAttrs = new ArrayList<>();
            columnNames = new ArrayList<>();
-           BPlusOneTree bPlusOneTree = new BPlusOneTree(davisbaseColumnsCatalog, rootPageNo);
+           BPlusOneTree bPlusOneTree = new BPlusOneTree(davisbaseColumnsCatalog, rootPageNo,tableName);
          
            /* Get all columns from the davisbase_columns, loop through all the leaf pages 
            and find the records with the table name */
@@ -95,7 +95,7 @@ public class TableMetaData{
            
              Page page = new Page(davisbaseColumnsCatalog, pageNo);
               
-              for (TableRecord record : page.records) {
+              for (TableRecord record : page.getPageRecords()) {
                   
                  if (record.getAttributes().get(0).fieldValue.equals(tableName)) {
                     {
@@ -103,7 +103,8 @@ public class TableMetaData{
                        columnData.add(record);
                        columnNames.add(record.getAttributes().get(1).fieldValue);
                        ColumnInfo colInfo = new ColumnInfo(
-                                          DataType.get(record.getAttributes().get(2).fieldValue)
+                                          tableName  
+                                        , DataType.get(record.getAttributes().get(2).fieldValue)
                                         , record.getAttributes().get(1).fieldValue
                                         , record.getAttributes().get(6).fieldValue.equals("YES")
                                         , record.getAttributes().get(4).fieldValue.equals("YES")
@@ -123,14 +124,14 @@ public class TableMetaData{
   
            davisbaseColumnsCatalog.close();
         } catch (Exception e) {
-           System.out.println("Error while getting column data for " + tableName);
-           System.out.println(e);
+           System.out.println("! Error while getting column data for " + tableName);
+           //debug: System.out.println(e);
         }
   
      }
 
-     // Method to check if the columns exists for the table in davisbase_columns
-   public boolean columnExists(String tableName, List<String> columns) {
+     // Method to check if the columns exists for the table
+   public boolean columnExists(List<String> columns) {
 
     if(columns.size() == 0)
        return true;
@@ -166,24 +167,24 @@ public class TableMetaData{
 
          TableMetaData tablesMetaData = new TableMetaData(DavisBaseBinaryFile.tablesTable);
          
-         Condition condition = new Condition();
+         Condition condition = new Condition(DataType.TEXT);
          condition.setColumName("table_name");
          condition.columnOrdinal = 0;
          condition.setConditionValue(tableName);
          condition.setOperator("=");
 
          List<String> columns = Arrays.asList("record_count","root_page");
-         List<Byte[]> newValues = new ArrayList<>();
-        
-         newValues.add(ByteConvertor.intToBytes(recordCount));
-         newValues.add(ByteConvertor.shortToBytes(rootPageNo.shortValue()));
-         
+         List<String> newValues = new ArrayList<>();
+
+         newValues.add(new Integer(recordCount).toString());
+         newValues.add(new Integer(rootPageNo).toString());
+
          tablesBinaryFile.updateRecords(tablesMetaData,condition,columns,newValues);
                                               
        davisbaseTablesCatalog.close();
    }
    catch(IOException e){
-      System.out.println("Error updating meta data for " + tableName);
+      System.out.println("! Error updating meta data for " + tableName);
    }
 
    
@@ -198,7 +199,7 @@ public class TableMetaData{
      for(int i=0;i<columnNameAttrs.size();i++)
      {
      
-        Condition condition = new Condition();
+        Condition condition = new Condition(columnNameAttrs.get(i).dataType);
          condition.columnName = columnNameAttrs.get(i).columnName;
          condition.columnOrdinal = i;
          condition.setOperator("=");
@@ -206,8 +207,8 @@ public class TableMetaData{
         if(columnNameAttrs.get(i).isUnique)
         {
          condition.setConditionValue(row.get(i).fieldValue);
-            if(file.CountOf(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition) > 0){
-          System.out.println("Insert failed! Column "+ columnNameAttrs.get(i).columnName + " should be unique." );
+            if(file.recordExists(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition)){
+          System.out.println("! Insert failed: Column "+ columnNameAttrs.get(i).columnName + " should be unique." );
                tableFile.close();
             return false;
         }
@@ -216,18 +217,7 @@ public class TableMetaData{
          }
       
 
-         if(columnNameAttrs.get(i).isPrimaryKey || columnNameAttrs.get(i).isNullable)
-         {
-          
-            condition.setConditionValue("NULL");
-              if(file.CountOf(this, Arrays.asList(columnNameAttrs.get(i).columnName), condition) > 0){
-            System.out.println("Insert failed! Column "+ columnNameAttrs.get(i).columnName + " cannot be null." );
-             tableFile.close();
-            return false;
-
-         }
-
-               }
+  
      }
  tableFile.close();
      return true;

@@ -63,8 +63,8 @@ public class Attribute
       }
          this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);
     } catch(Exception ex) {
-        System.out.println("Formatting exception:\n" + ex);
-        ex.printStackTrace();
+        System.out.println("! Formatting exception");
+        //debug: ex.printStackTrace();
     }
 
     }
@@ -100,11 +100,11 @@ public class Attribute
                 break;
               case TEXT: this.fieldValuebyte = fieldValue.getBytes(); break;
                default:
-               this.fieldValuebyte = fieldValue.getBytes(); break;
+               this.fieldValuebyte = fieldValue.getBytes(StandardCharsets.US_ASCII); break;
             }
             this.fieldValueByte = ByteConvertor.byteToBytes(fieldValuebyte);  
         } catch (Exception e) {
-            System.out.println("Cannot convert " + fieldValue + " to " + dataType.toString());
+            System.out.println("! Cannot convert " + fieldValue + " to " + dataType.toString());
             throw e;
         }
     }
