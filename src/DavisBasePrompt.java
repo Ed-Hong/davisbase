@@ -14,15 +14,6 @@ import static java.lang.System.out;
 /**
  * @author Team Yellow
  * @version 1.0 <b>
- *          <p>
- *          This is an example of how to create an interactive prompt
- *          </p>
- *          <p>
- *          There is also some guidance to get started with read/write of binary
- *          data files using RandomAccessFile class
- *          </p>
- *          </b>
- *
  */
 public class DavisBasePrompt {
 
@@ -206,54 +197,33 @@ public class DavisBasePrompt {
 				parseCreateTable(userCommand);
 			else if (commandTokens.get(1).equals("index"))
 				parseCreateIndex(userCommand);
-				break;
-			case "update":
-				parseUpdate(userCommand);
-                break;
-            case "insert":
-				parseInsert(userCommand);
-				break;
-			case "delete":
-				parseDelete(userCommand);
-				break;
-			case "source":
-				parseSource(userCommand);
-				break;
-			case "help":
-				help();
-				break;
-			case "version":
-				displayVersion();
-				break;
-			case "exit":
-				isExit = true;
-				break;
-			case "quit":
-				isExit = true;
-				break;
-			default:
-				System.out.println("! I didn't understand the command: \"" + userCommand + "\"");
-				break;
+			break;
+		case "update":
+			parseUpdate(userCommand);
+			break;
+		case "insert":
+			parseInsert(userCommand);
+			break;
+		case "delete":
+			parseDelete(userCommand);
+			break;
+		case "source":
+			parseSource(commandTokens.get(1));
+			break;
+		case "help":
+			help();
+			break;
+		case "version":
+			displayVersion();
+			break;
+		case "exit":
+		case "quit":
+			isExit = true;
+			break;
+		default:
+			System.out.println("! I didn't understand the command: \"" + userCommand + "\"");
+			break;
 		}
-	}
-
-	public static void test() {
-		Scanner scan = new Scanner(System.in);
-      parseUserCommand("create table test (id int, name text)");
-      scan.nextLine();
-      parseUserCommand("create index on test (name)");
-      scan.nextLine();
-		for (int i = 1; i < 35; i++)
-		{	
-   //   System.out.println(i);
-      parseUserCommand("insert into test (id , name) values (" + (i) + ", "+ i + "'arun' )");
-
-		//scan.nextLine();
-      }
-		parseUserCommand("show tables");
-
-		scan.nextLine();
-
 	}
 
 	public static void parseCreateIndex(String createIndexString) {
@@ -672,7 +642,6 @@ public class DavisBasePrompt {
 	 * @param queryString is a String of the user input
 	 */
 	public static void parseCreateTable(String createTableString) {
-
 		ArrayList<String> createTableTokens = new ArrayList<String>(Arrays.asList(createTableString.split(" ")));
 		// table and () check
 		if (!createTableTokens.get(1).equals("table")) {
@@ -790,21 +759,30 @@ public class DavisBasePrompt {
 	 * @param insertFile is the filename to be processed
 	 */
 	private static void parseSource(String insertFile) {
-		String command;
 		insertFile.replaceAll(";", "");	//Prevents the program from reading the endline ";" as part of the filename
-		Scanner read = new Scanner (new File(insertfile));
+		Scanner read = null;
+		String command;
 		try {
-			read.useDelimiter(";");
-			while (read.hasNext()) {
-				command = read.next();
-				parseUserCommand(command + ";");
+			read = new Scanner (new File(insertFile));
+			while (read.hasNextLine()) {
+				command = read.nextLine().replaceAll(";", "");
+				// Skip whitespace and comments
+				if (command.length() < 1 || command.startsWith("//")) {
+					continue;
+				}
+				System.out.println(command);
+				parseUserCommand(command);
 			}
 		}
-		catch (Exception e)
-		{
+		catch (FileNotFoundException fnfe) {
+			System.out.println("! Could not find batch file " + insertFile);
+		}
+		catch (Exception e) {
 			e.printStackTrace();
 		}
-		read.close();
+		finally {
+			if (read != null) read.close();
+		}
 	}
 
 	/**
