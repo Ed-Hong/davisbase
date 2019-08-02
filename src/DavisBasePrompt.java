@@ -2,6 +2,7 @@ import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.SortedMap;
@@ -141,6 +142,9 @@ public class DavisBasePrompt {
 		out.println("\tDisplay table records whose optional <condition>");
 		out.println("\tis <column_name> = <value>.\n");
 
+		out.println("SOURCE filename;");
+		out.println("\tProcess a batch file of commands.\n");
+
 		out.println("VERSION;");
 		out.println("\tDisplay the program version.\n");
 
@@ -202,34 +206,34 @@ public class DavisBasePrompt {
 				parseCreateTable(userCommand);
 			else if (commandTokens.get(1).equals("index"))
 				parseCreateIndex(userCommand);
-			break;
-		case "update":
-			parseUpdate(userCommand);
-			break;
-		case "insert":
-			parseInsert(userCommand);
-			break;
-		case "delete":
-			parseDelete(userCommand);
-			break;
-		case "help":
-			help();
-			break;
-		case "version":
-			displayVersion();
-			break;
-		case "exit":
-			isExit = true;
-			break;
-		case "quit":
-			isExit = true;
-			break;
-		case "test":
-			test();
-			break;
-		default:
-			System.out.println("! I didn't understand the command: \"" + userCommand + "\"");
-			break;
+				break;
+			case "update":
+				parseUpdate(userCommand);
+                break;
+            case "insert":
+				parseInsert(userCommand);
+				break;
+			case "delete":
+				parseDelete(userCommand);
+				break;
+			case "source":
+				parseSource(userCommand);
+				break;
+			case "help":
+				help();
+				break;
+			case "version":
+				displayVersion();
+				break;
+			case "exit":
+				isExit = true;
+				break;
+			case "quit":
+				isExit = true;
+				break;
+			default:
+				System.out.println("! I didn't understand the command: \"" + userCommand + "\"");
+				break;
 		}
 	}
 
@@ -779,6 +783,28 @@ public class DavisBasePrompt {
 					+ "' ");
 		}
 
+	}
+	
+	/**
+	 * Batch process commands
+	 * @param insertFile is the filename to be processed
+	 */
+	private static void parseSource(String insertFile) {
+		String command;
+		insertFile.replaceAll(";", "");	//Prevents the program from reading the endline ";" as part of the filename
+		Scanner read = new Scanner (new File(insertfile));
+		try {
+			read.useDelimiter(";");
+			while (read.hasNext()) {
+				command = read.next();
+				parseUserCommand(command + ";");
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		read.close();
 	}
 
 	/**
