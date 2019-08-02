@@ -232,6 +232,8 @@ public class DavisBasePrompt {
 			if (!createIndexTokens.get(2).equals("on") || !createIndexString.contains("(")
 					|| !createIndexString.contains(")") && createIndexTokens.size() < 4) {
 				System.out.println("! Syntax Error");
+				System.out.println(
+					"Expected Syntax: CREATE INDEX ON <table_name>(<column_name>)");
 				return;
 			}
 
@@ -259,7 +261,7 @@ public class DavisBasePrompt {
 			int columnOrdinal = metaData.columnNames.indexOf(columnName);
 
 			if (columnOrdinal < 0) {
-				System.out.println("! Invalid column name");
+				System.out.println("! Invalid column name(s)");
 				tableFile.close();
 				return;
 			}
@@ -377,10 +379,15 @@ public class DavisBasePrompt {
 		}
 
 		TableMetaData tableMetaData = new TableMetaData(table_name);
-      if(!tableMetaData.tableExists){
-         System.out.println("! Table does not exist");
-         return;
-      }
+      	if(!tableMetaData.tableExists) {
+    		System.out.println("! Table does not exist");
+         	return;
+		}
+
+		if (!tableMetaData.columnExists(column_names)) {
+			System.out.println("! Invalid column name(s)");
+			return;
+		}
       
 		Condition condition = null;
 		try {
@@ -527,8 +534,8 @@ public class DavisBasePrompt {
 
 		if (!insertTokens.get(1).equals("into") || !queryString.contains(") values")) {
 			System.out.println("! Syntax error");
-			System.out.println("Expected Syntax: INSERT INTO table_name ( columns ) VALUES ( values );");
-
+			System.out.println(
+				"Expected Syntax: INSERT INTO <table_name>(<columns>) VALUES (<values>);");
 			return;
 		}
 
@@ -655,6 +662,8 @@ public class DavisBasePrompt {
 		// table and () check
 		if (!createTableTokens.get(1).equals("table")) {
 			System.out.println("! Syntax Error");
+			System.out.println(
+					"Expected Syntax: CREATE TABLE <table_name>(<col_name> <data_type> [primary key] [not null] [unique], ...);");
 			return;
 		}
 		String tableName = createTableTokens.get(2);
@@ -808,6 +817,8 @@ public class DavisBasePrompt {
 
 			if (!deleteTableTokens.get(1).equals("from") || !deleteTableTokens.get(2).equals("table")) {
 				System.out.println("! Syntax Error");
+				System.out.println(
+					"Expected Syntax: DELETE FROM TABLE <table_name> WHERE <condition>;");
 				return;
 			}
 
