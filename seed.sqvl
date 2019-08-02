@@ -1,0 +1,115 @@
+// Example seeding script. Inserts 100 rows with ids ranging from [10, 200]
+
+// An easy way to insert more records is to copy the first block of 50 inserts
+// and then simply increment the hundredth's digit of the id.
+// ie: 50 -> 150, 167 -> 267, 273 -> 373, etc.
+
+// Using a multi-line text editor or a text editor with replace-all functionality
+// makes it especially easy.
+
+show rowid;
+
+drop table test;
+//create table test(id int primary key, name text);
+create table test(id int, name text);
+
+insert into test (id, name) values (50, hello world);
+insert into test (id, name) values (10, hello world);
+insert into test (id, name) values (70, hello world);
+insert into test (id, name) values (60, hello world);
+insert into test (id, name) values (80, hello world);
+insert into test (id, name) values (90, hello world);
+insert into test (id, name) values (99, hello world);
+insert into test (id, name) values (15, hello world);
+insert into test (id, name) values (12, hello world);
+insert into test (id, name) values (18, hello world);
+insert into test (id, name) values (30, hello world);
+insert into test (id, name) values (35, hello world);
+insert into test (id, name) values (40, hello world);
+insert into test (id, name) values (75, hello world);
+insert into test (id, name) values (85, hello world);
+insert into test (id, name) values (24, hello world);
+insert into test (id, name) values (37, hello world);
+insert into test (id, name) values (78, hello world);
+insert into test (id, name) values (46, hello world);
+insert into test (id, name) values (55, hello world);
+insert into test (id, name) values (21, hello world);
+insert into test (id, name) values (11, hello world);
+insert into test (id, name) values (92, hello world);
+insert into test (id, name) values (93, hello world);
+insert into test (id, name) values (63, hello world);
+insert into test (id, name) values (89, hello world);
+insert into test (id, name) values (91, hello world);
+insert into test (id, name) values (27, hello world);
+insert into test (id, name) values (13, hello world);
+insert into test (id, name) values (22, hello world);
+insert into test (id, name) values (33, hello world);
+insert into test (id, name) values (44, hello world);
+insert into test (id, name) values (69, hello world);
+insert into test (id, name) values (79, hello world);
+insert into test (id, name) values (34, hello world);
+insert into test (id, name) values (51, hello world);
+insert into test (id, name) values (41, hello world);
+insert into test (id, name) values (77, hello world);
+insert into test (id, name) values (88, hello world);
+insert into test (id, name) values (66, hello world);
+insert into test (id, name) values (26, hello world);
+insert into test (id, name) values (76, hello world);
+insert into test (id, name) values (43, hello world);
+insert into test (id, name) values (39, hello world);
+insert into test (id, name) values (49, hello world);
+insert into test (id, name) values (59, hello world);
+insert into test (id, name) values (29, hello world);
+insert into test (id, name) values (61, hello world);
+insert into test (id, name) values (62, hello world);
+insert into test (id, name) values (100, hello world);
+
+insert into test (id, name) values (110, hello world);
+insert into test (id, name) values (170, hello world);
+insert into test (id, name) values (160, hello world);
+insert into test (id, name) values (180, hello world);
+insert into test (id, name) values (190, hello world);
+insert into test (id, name) values (199, hello world);
+insert into test (id, name) values (115, hello world);
+insert into test (id, name) values (112, hello world);
+insert into test (id, name) values (118, hello world);
+insert into test (id, name) values (130, hello world);
+insert into test (id, name) values (135, hello world);
+insert into test (id, name) values (140, hello world);
+insert into test (id, name) values (175, hello world);
+insert into test (id, name) values (185, hello world);
+insert into test (id, name) values (124, hello world);
+insert into test (id, name) values (137, hello world);
+insert into test (id, name) values (178, hello world);
+insert into test (id, name) values (146, hello world);
+insert into test (id, name) values (155, hello world);
+insert into test (id, name) values (121, hello world);
+insert into test (id, name) values (111, hello world);
+insert into test (id, name) values (192, hello world);
+insert into test (id, name) values (193, hello world);
+insert into test (id, name) values (163, hello world);
+insert into test (id, name) values (189, hello world);
+insert into test (id, name) values (191, hello world);
+insert into test (id, name) values (127, hello world);
+insert into test (id, name) values (113, hello world);
+insert into test (id, name) values (122, hello world);
+insert into test (id, name) values (133, hello world);
+insert into test (id, name) values (144, hello world);
+insert into test (id, name) values (169, hello world);
+insert into test (id, name) values (179, hello world);
+insert into test (id, name) values (134, hello world);
+insert into test (id, name) values (151, hello world);
+insert into test (id, name) values (141, hello world);
+insert into test (id, name) values (177, hello world);
+insert into test (id, name) values (188, hello world);
+insert into test (id, name) values (166, hello world);
+insert into test (id, name) values (126, hello world);
+insert into test (id, name) values (176, hello world);
+insert into test (id, name) values (143, hello world);
+insert into test (id, name) values (139, hello world);
+insert into test (id, name) values (149, hello world);
+insert into test (id, name) values (159, hello world);
+insert into test (id, name) values (129, hello world);
+insert into test (id, name) values (161, hello world);
+insert into test (id, name) values (162, hello world);
+insert into test (id, name) values (200, hello world);
