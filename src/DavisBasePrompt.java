@@ -430,10 +430,19 @@ public class DavisBasePrompt {
 
 		List<String> column_newValueSet = Arrays.asList(updateColInfoString.split(","));
 
-		for (String item : column_newValueSet) {
-			columnsToUpdate.add(item.split("=")[0].trim());
-			valueToUpdate.add(item.split("=")[1].trim().replace("\"", "").replace("'", ""));
+		try {
+			for (String item : column_newValueSet) {
+				columnsToUpdate.add(item.split("=")[0].trim());
+				valueToUpdate.add(item.split("=")[1].trim().replace("\"", "").replace("'", ""));
+			}
+		} catch (Exception e) {
+			System.out.println("! Syntax error");
+			System.out.println(
+					"Expected Syntax: UPDATE [table_name] SET [Column_name] = val1 where [column_name] = val2; ");
+			return;
 		}
+
+
 
 		TableMetaData metadata = new TableMetaData(table_name);
 
