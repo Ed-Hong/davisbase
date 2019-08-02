@@ -24,15 +24,16 @@ public class BTree {
                         value);
             else if(Condition.compare(value,page.getIndexValues().get(page.getIndexValues().size()-1),page.indexValueDataType) > 0)
                 return getClosestPageNo(
-                    new Page(binaryFile,page.indexValuePointer.get(page.getIndexValues().get(page.getIndexValues().size()-1)).rightPageNo),
+                    new Page(binaryFile,page.rightPage),
                         value);
             else{
                 //perform binary search 
                 String closestValue = binarySearch(page.getIndexValues().toArray(new String[page.getIndexValues().size()]),value,0,page.getIndexValues().size() -1,page.indexValueDataType);
-
-                if(closestValue.compareTo(value) < 0)
+                int i = page.getIndexValues().indexOf(closestValue);
+                List<String> indexValues = page.getIndexValues();
+                if(closestValue.compareTo(value) < 0 && i+1 < indexValues.size())
                 {
-                    return page.indexValuePointer.get(closestValue).rightPageNo;
+                    return page.indexValuePointer.get(indexValues.get(i+1)).leftPageNo;
                 }
                 else if(closestValue.compareTo(value) > 0)
                 {
@@ -48,7 +49,6 @@ public class BTree {
 
     public List<Integer> getRowIds(Condition condition)
     {
-
         List<Integer> rowIds = new ArrayList<>();
 
         //get to the closest page number satisfying the condition
@@ -74,6 +74,8 @@ public class BTree {
            else 
                 rowIds.addAll(getAllRowIdsLeftOf(page.pageNo,condition.comparisonValue));
         }   
+        
+    //    System.out.println(Arrays.toString(rowIds.toArray()));
 
          //recursivesly store all the rowids from the right side of the node
         if(operationType == OperatorType.GREATERTHAN || operationType == OperatorType.GREATERTHANOREQUAL)
@@ -124,7 +126,9 @@ public class BTree {
         for(int i=indexValues.size() - 1; i >= 0 && Condition.compare(indexValues.get(i), indexValue, page.indexValueDataType) > 0; i--)
         {
                rowIds.addAll(page.indexValuePointer.get(indexValues.get(i)).getIndexNode().rowids);
-               addAllChildRowIds(page.indexValuePointer.get(indexValues.get(i)).rightPageNo, rowIds);
+       //        System.out.println(Arrays.toString(rowIds.toArray()));
+                addAllChildRowIds(page.rightPage, rowIds);
+    //           System.out.println(Arrays.toString(rowIds.toArray()));
          }
 
         if(page.indexValuePointer.get(indexValue)!= null)
@@ -149,18 +153,23 @@ public class BTree {
             }  
     }
 
+    public void insert(Attribute attribute,List<Integer> rowIds)
+    {
+        try{
+            int pageNo = getClosestPageNo(root, attribute.fieldValue) ;
+            Page page = new Page(binaryFile, pageNo);
+            page.addIndex(new IndexNode(attribute,rowIds));
+            }
+            catch(IOException e)
+            {
+                 System.out.println("! Error while insering " + attribute.fieldValue +" into index file");
+            }
+    }
+
     //Inserts index value into the index page
     public void insert(Attribute attribute,int rowId)
     {
-    try{
-        int pageNo = getClosestPageNo(root, attribute.fieldValue) ;
-        Page page = new Page(binaryFile, pageNo);
-        page.addIndex(new IndexNode(attribute,Arrays.asList(rowId)));
-        }
-        catch(IOException e)
-        {
-             System.out.println("! Error while insering " + attribute.fieldValue +" into index file");
-        }
+        insert(attribute,Arrays.asList(rowId));
     }
 
     public void delete(Attribute attribute, int rowid)
@@ -172,10 +181,11 @@ public class BTree {
             
             IndexNode tempNode = page.indexValuePointer.get(attribute.fieldValue).getIndexNode();
             //remove the rowid from the index value
-            tempNode.rowids.remove(rowid);
+            tempNode.rowids.remove(tempNode.rowids.indexOf(rowid));
 
             page.DeleteIndex(tempNode);
-            page.addIndex(tempNode);
+            if(tempNode.rowids.size() !=0)
+               page.addIndex(tempNode);
 
             }
             catch(IOException e)

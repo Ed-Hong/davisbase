@@ -61,7 +61,7 @@ public class DavisBaseBinaryFile {
 
 
    
-   public void updateRecords(TableMetaData tablemetaData,Condition condition, 
+   public int updateRecords(TableMetaData tablemetaData,Condition condition, 
                   List<String> columNames, List<String> newValues) throws IOException
    {
       int count = 0;
@@ -83,7 +83,7 @@ public class DavisBaseBinaryFile {
                       catch (Exception e) {
 							System.out.println("! Invalid data format for " + tablemetaData.columnNames.get(index) + " values: "
 									+ strnewValue);
-							return;
+							return count;
 						}
 
          k++;
@@ -105,6 +105,8 @@ public class DavisBaseBinaryFile {
                count++;
                for(int i :newValueMap.keySet())
                {
+                  Attribute oldValue = record.getAttributes().get(i);
+                  int rowId = record.rowId;
                   if((record.getAttributes().get(i).dataType == DataType.TEXT
                    && record.getAttributes().get(i).fieldValue.length() == newValueMap.get(i).fieldValue.length())
                      || (record.getAttributes().get(i).dataType != DataType.NULL && record.getAttributes().get(i).dataType != DataType.TEXT)
@@ -122,14 +124,25 @@ public class DavisBaseBinaryFile {
                      attrs.remove(i);
                      attr = newValueMap.get(i);
                      attrs.add(i, attr);
-                     page.addTableRow(tablemetaData.tableName , attrs);
-                } 
+                    rowId =  page.addTableRow(tablemetaData.tableName , attrs);
+                }
+                
+                if(tablemetaData.columnNameAttrs.get(i).hasIndex && condition!=null){
+                  RandomAccessFile indexFile = new RandomAccessFile(DavisBasePrompt.getNDXFilePath(tablemetaData.columnNameAttrs.get(i).tableName, tablemetaData.columnNameAttrs.get(i).columnName), "rw");
+                  BTree bTree = new BTree(indexFile);
+                  bTree.delete(oldValue,record.rowId);
+                  bTree.insert(newValueMap.get(i), rowId);
+                  indexFile.close();
+                }
+                
                }
              }
       }
     
       if(!tablemetaData.tableName.equals(tablesTable) && !tablemetaData.tableName.equals(columnsTable))
           System.out.println("* " + count+" record(s) updated.");
+          
+         return count;
 
    }
 

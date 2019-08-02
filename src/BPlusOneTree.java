@@ -120,14 +120,18 @@ public class BPlusOneTree {
         if (rowId < page.leftChildren.get(index).rowId) {
             return getPageNo(rowId, new Page(binaryFile, page.leftChildren.get(index).leftChildPageNo));
         } else {
-            return getPageNo(rowId, new Page(binaryFile, page.rightPage));
+        if( index+1 < page.leftChildren.size())
+            return getPageNo(rowId, new Page(binaryFile, page.leftChildren.get(index+1).leftChildPageNo));
+        else
+           return getPageNo(rowId, new Page(binaryFile, page.rightPage));
+
 
         }
     }
 
     private int binarySearch(List<TableInteriorRecord> values, int searchValue, int start, int end) {
 
-        if(end - start <= 3)
+        if(end - start <= 2)
         {
             int i =start;
             for(i=start;i <end;i++){

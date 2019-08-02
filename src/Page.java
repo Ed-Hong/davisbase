@@ -3,10 +3,9 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeSet;
 
 /* This class handles all the page related logic*/
@@ -324,6 +323,8 @@ if(refreshTableRecords)
     
     }
     
+    private boolean idxPageCleaned;
+
     private void handleIndexOverflow() throws IOException
     {
      if(pageType == PageType.LEAFINDEX)
@@ -339,20 +340,19 @@ if(refreshTableRecords)
 
        //set the new parentPage as parent for the current page 
        setParent(parentPageNo);
-
+      
        IndexNode incomingInsertTemp = this.incomingInsert;
        //Split the index records
      
     // Insert half the items into leftchild page
        Page leftLeafPage = new Page(binaryFile, newLeftLeafPageNo);
-        
        //call the split method
        IndexNode toInsertParentIndexNode = splitIndexRecordsBetweenPages(leftLeafPage);
       
        //Insert Middle record to the parent page with left page No
 
        Page parentPage = new Page(binaryFile,parentPageNo);
-
+     
        //shift page based on the incoming index value
        int comparisonResult= Condition.compare(incomingInsertTemp.indexValue.fieldValue,toInsertParentIndexNode.indexValue.fieldValue,incomingInsert.indexValue.dataType);
        
@@ -380,6 +380,30 @@ if(refreshTableRecords)
      else{
       //multilevel split - split on interior page
        //create a new interior Parent root Page
+       
+       if(noOfCells < 3 && !idxPageCleaned)
+       {
+          idxPageCleaned = true;
+          String[] indexValuesTemp = getIndexValues().toArray(new String[getIndexValues().size()]);
+          HashMap<String, IndexRecord> indexValuePointerTemp = (HashMap<String, IndexRecord>) indexValuePointer.clone();
+          IndexNode incomingInsertTemp = this.incomingInsert;
+           cleanPage();
+          for (int i = 0; i < indexValuesTemp.length; i++) {
+            addIndex(indexValuePointerTemp.get(indexValuesTemp[i]).getIndexNode(),indexValuePointerTemp.get(indexValuesTemp[i]).leftPageNo);
+          }
+          
+          addIndex(incomingInsertTemp);
+          return;
+       }
+
+       if(idxPageCleaned)
+       {
+         System.out.println("! Page overflow, increase the page size. Reached Max number of rows for an Index value");
+         return;
+       }
+
+      
+       
        if(parentPageNo == -1)
        {
         parentPageNo = addNewPage(binaryFile, PageType.INTERIORINDEX, pageNo , -1);
@@ -400,7 +424,6 @@ if(refreshTableRecords)
         IndexNode toInsertParentIndexNode = splitIndexRecordsBetweenPages(leftInteriorPage);
 
         Page parentPage = new Page(binaryFile,parentPageNo);
-
        //shift page based on the incoming index value
        int comparisonResult= Condition.compare(incomingInsertTemp.indexValue.fieldValue,toInsertParentIndexNode.indexValue.fieldValue,incomingInsert.indexValue.dataType);
        
@@ -434,6 +457,26 @@ if(refreshTableRecords)
      
      
     }
+   // clean the current(rightleaf) page by resetting the page offsets and no of
+    // records,
+    private void cleanPage() throws IOException {
+
+      noOfCells = 0;
+      contentStartOffset = Long.valueOf(DavisBaseBinaryFile.pageSize).shortValue();
+      availableSpace = contentStartOffset - 0x10 - (noOfCells * 2); // this page will now be treated as a new page
+      byte[] emptybytes = new byte[512-16];
+      Arrays.fill(emptybytes, (byte) 0 );
+      binaryFile.seek(pageStart + 16);
+      binaryFile.write(emptybytes);
+      binaryFile.seek(pageStart + 2);
+      binaryFile.writeShort(noOfCells);
+      binaryFile.seek(pageStart + 4);
+      binaryFile.writeShort(contentStartOffset);
+      lIndexValues = new TreeSet<>();
+      sIndexValues = new TreeSet<>();
+      indexValuePointer = new HashMap<>();
+
+    }
 
 
     //copies half to left page and rewrite the current right page with remaining half records
@@ -453,15 +496,7 @@ if(refreshTableRecords)
       newleftPage.addIndex(indexValuePointerTemp.get(indexValuesTemp[i]).getIndexNode(),indexValuePointerTemp.get(indexValuesTemp[i]).leftPageNo);
     }
 
-    // clean the current(rightleaf) page by resetting the page offsets and no of
-    // records,
-    noOfCells = 0;
-    contentStartOffset = Long.valueOf(pageStart + DavisBaseBinaryFile.pageSize).shortValue();
-    availableSpace = contentStartOffset - 0x10 - (noOfCells * 2); // this page will now be treated as a new page
-    binaryFile.seek(pageStart + 2);
-    binaryFile.writeShort(noOfCells);
-    binaryFile.seek(pageStart + 4);
-    binaryFile.writeShort(contentStartOffset);
+    cleanPage();
     sIndexValues = new TreeSet<>();
     lIndexValues = new TreeSet<>();
     indexValuePointer = new HashMap<String, IndexRecord>();
@@ -571,6 +606,11 @@ if(refreshTableRecords)
 //Add left child for the current page
   private int addLeftTableChild(int leftChildPageNo,int rowId) throws IOException
   {
+    for( TableInteriorRecord intRecord: leftChildren)
+    {
+      if(intRecord.rowId == rowId)
+        return pageNo;
+    }
     if(pageType == PageType.INTERIOR)
     {
       List<Byte> recordHeader= new ArrayList<>();
@@ -647,7 +687,10 @@ if(refreshTableRecords)
   if(getIndexValues().contains(node.indexValue.fieldValue))
   {
       leftPageNo = indexValuePointer.get(node.indexValue.fieldValue).leftPageNo;
+      incomingInsert.leftPageNo = leftPageNo;
       rowIds = indexValuePointer.get(node.indexValue.fieldValue).rowIds;
+      rowIds.addAll(incomingInsert.rowids);
+      incomingInsert.rowids = rowIds;
       DeletePageRecord(indexValuePointer.get(node.indexValue.fieldValue).pageHeaderIndex);
       if(indexValueDataType == DataType.TEXT || indexValueDataType == null)
         sIndexValues.remove(node.indexValue.fieldValue);
@@ -656,6 +699,8 @@ if(refreshTableRecords)
   }
 
      rowIds.addAll(node.rowids);
+
+     rowIds = new ArrayList<>(new HashSet<>(rowIds));
 
     List<Byte> recordHead = new ArrayList<>(); 
     List<Byte> recordBody = new ArrayList<>();

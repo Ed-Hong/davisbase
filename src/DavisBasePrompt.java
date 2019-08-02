@@ -234,11 +234,17 @@ public class DavisBasePrompt {
 
 	public static void test() {
 		Scanner scan = new Scanner(System.in);
+      parseUserCommand("create table test (id int, name text)");
+      scan.nextLine();
+      parseUserCommand("create index on test (name)");
+      scan.nextLine();
+		for (int i = 1; i < 35; i++)
+		{	
+   //   System.out.println(i);
+      parseUserCommand("insert into test (id , name) values (" + (i) + ", "+ i + "'arun' )");
 
-		for (int i = 1; i < 36; i++)
-			parseUserCommand("insert into test (id , name) values (" + (i) + ",'Arun" + i + "' )");
-
-		scan.nextLine();
+		//scan.nextLine();
+      }
 		parseUserCommand("show tables");
 
 		scan.nextLine();
@@ -265,10 +271,6 @@ public class DavisBasePrompt {
 				return;
 			}
 			
-			// create index file
-			RandomAccessFile indexFile = new RandomAccessFile(getNDXFilePath(tableName, columnName), "rw");
-			Page.addNewPage(indexFile, PageType.LEAFINDEX, -1, -1);
-
 			RandomAccessFile tableFile = new RandomAccessFile(getTBLFilePath(tableName), "rw");
 
 			TableMetaData metaData = new TableMetaData(tableName);
@@ -286,6 +288,12 @@ public class DavisBasePrompt {
 				tableFile.close();
 				return;
 			}
+         
+             
+         // create index file
+			RandomAccessFile indexFile = new RandomAccessFile(getNDXFilePath(tableName, columnName), "rw");
+			Page.addNewPage(indexFile, PageType.LEAFINDEX, -1, -1);
+
 
 			if (metaData.recordCount > 0) {
 				BPlusOneTree bPlusOneTree = new BPlusOneTree(tableFile, metaData.rootPageNo, metaData.tableName);
@@ -352,6 +360,11 @@ public class DavisBasePrompt {
 		}
 
 		TableMetaData tableMetaData = new TableMetaData(table_name);
+      if(!tableMetaData.tableExists){
+         System.out.println("! Table does not exist");
+         return;
+      }
+      
 		Condition condition = null;
 		try {
 
@@ -428,16 +441,57 @@ public class DavisBasePrompt {
 
 		}
 
+	
+
+
 		try {
 			RandomAccessFile file = new RandomAccessFile(getTBLFilePath(table_name), "rw");
 			DavisBaseBinaryFile binaryFile = new DavisBaseBinaryFile(file);
-			binaryFile.updateRecords(metadata, condition, columnsToUpdate, valueToUpdate);
-			file.close();
-		} catch (Exception e) {
-			out.println("Unable to update the " + table_name + " file");
-			out.println(e);
+			int noOfRecordsupdated = binaryFile.updateRecords(metadata, condition, columnsToUpdate, valueToUpdate);
+		
+			if(noOfRecordsupdated > 0)
+			{
+			List<Integer> allRowids = new ArrayList<>();
+		for(ColumnInfo colInfo : metadata.columnNameAttrs)
+		{
+			for(int i=0;i<columnsToUpdate.size();i++)
+			if(colInfo.columnName.equals(columnsToUpdate.get(i)) &&  colInfo.hasIndex)
+			{
+				
+					// when there is no condition, All rows in the column gets updated the index value point to all rowids
+					if(condition == null) 
+					{
+						//Delete the index file. TODO
 
+					if(allRowids.size() == 0)
+					{
+						BPlusOneTree bPlusOneTree = new BPlusOneTree(file, metadata.rootPageNo, metadata.tableName);
+						for (int pageNo : bPlusOneTree.getAllLeaves()) {
+							Page currentPage = new Page(file, pageNo);
+							for (TableRecord record : currentPage.getPageRecords()) {
+								allRowids.add(record.rowId);
+							}
+						}
+					}
+					//create a new index value and insert 1 index value with all rowids
+						RandomAccessFile indexFile = new RandomAccessFile(getNDXFilePath(table_name, columnsToUpdate.get(i)),
+								"rw");
+						Page.addNewPage(indexFile, PageType.LEAFINDEX, -1, -1);
+						BTree bTree = new BTree(indexFile);
+						bTree.insert(new Attribute(colInfo.dataType,valueToUpdate.get(i)), allRowids);
+					}
+			}
 		}
+	}
+
+		file.close();
+	
+	} catch (Exception e) {
+		out.println("Unable to update the " + table_name + " file");
+		out.println(e);
+
+	}
+		
 
 	}
 
@@ -739,7 +793,11 @@ public class DavisBasePrompt {
 			// if there is no condition, all the rows will be deleted.
 			// so just delete the existing index files on the table and create new ones
 			if (condition == null) {
-				// TODO delete exisitng index files and create new ones;
+				// TODO delete exisitng index files for the table 
+				//and create new ones;
+				
+
+
 
 			} else {
 				for (int i = 0; i < metaData.columnNameAttrs.size(); i++) {
@@ -781,15 +839,23 @@ public class DavisBasePrompt {
 			// WHERE NOT column operator value
 			if (whereClauseTokens.get(0).equalsIgnoreCase("not")) {
 				condition.setNegation(true);
-				condition.setColumName(whereClauseTokens.get(1).trim());
-				condition.setOperator(whereClauseTokens.get(2).trim());
-				condition.setConditionValue(whereClauseTokens.get(3).trim());
-			} else {	// WHERE column operator value
-				condition.setColumName(whereClauseTokens.get(0).trim());
-				condition.setOperator(whereClauseTokens.get(1).trim());
-				condition.setConditionValue(whereClauseTokens.get(2).trim());
+          }
+        
+          
+          for (int i = 0; i < Condition.supportedOperators.length; i++) {
+				if (whereClause.contains(Condition.supportedOperators[i])) {
+					whereClauseTokens = new ArrayList<String>(
+							Arrays.asList(whereClause.split(Condition.supportedOperators[i])));
+				{	condition.setOperator(Condition.supportedOperators[i]);
+			   	    condition.setConditionValue(whereClauseTokens.get(1).trim());
+					condition.setColumName(whereClauseTokens.get(0).trim());
+					break;
+				}
+				
+				}
 			}
-			
+          
+									
 			if (tableMetaData.tableExists
 					&& tableMetaData.columnExists(new ArrayList<String>(Arrays.asList(condition.columnName)))) {
 				condition.columnOrdinal = tableMetaData.columnNames.indexOf(condition.columnName);
