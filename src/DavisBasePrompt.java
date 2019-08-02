@@ -903,13 +903,20 @@ public class DavisBasePrompt {
 			}
           
 									
-			if (tableMetaData.tableExists
-					&& tableMetaData.columnExists(new ArrayList<String>(Arrays.asList(condition.columnName)))) {
+			if (tableMetaData.tableExists && tableMetaData.columnExists(new ArrayList<String>(Arrays.asList(condition.columnName)))) {
 				condition.columnOrdinal = tableMetaData.columnNames.indexOf(condition.columnName);
 				condition.dataType = tableMetaData.columnNameAttrs.get(condition.columnOrdinal).dataType;
+
+				if(condition.dataType != DataType.TEXT && condition.dataType != DataType.NULL) {
+					try {
+						Long.parseLong(condition.comparisonValue);
+					} catch (Exception e) {
+						throw new Exception("! Invalid Comparison");
+					}
+				}
+
 			} else {
-				throw new Exception(
-						"! Invalid Table/Column : " + tableMetaData.tableName + " . " + condition.columnName);
+				throw new Exception("! Invalid Table/Column : " + tableMetaData.tableName + " . " + condition.columnName);
 			}
 			return condition;
 		} else
