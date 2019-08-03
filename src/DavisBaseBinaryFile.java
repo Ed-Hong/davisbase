@@ -145,7 +145,7 @@ public class DavisBaseBinaryFile {
                   bTree.insert(newValueMap.get(i), rowId);
                   indexFile.close();
                 }
-                if(conditionalColumnIndex !=-1)
+                if(conditionalColumnIndex !=-1 && tablemetaData.columnNameAttrs.get(conditionalColumnIndex).hasIndex )
                 {
                   RandomAccessFile indexFile = new RandomAccessFile(DavisBasePrompt.getNDXFilePath(tablemetaData.columnNameAttrs.get(conditionalColumnIndex).tableName, tablemetaData.columnNameAttrs.get(conditionalColumnIndex).columnName), "rw");
                   BTree bTree = new BTree(indexFile);
