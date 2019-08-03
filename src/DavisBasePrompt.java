@@ -494,7 +494,11 @@ public class DavisBasePrompt {
 					// when there is no condition, All rows in the column gets updated the index value point to all rowids
 					if(condition == null) 
 					{
-						//Delete the index file. TODO
+						File f = new File(getNDXFilePath(table_name,colInfo.columnName));
+						if(f.exists())
+						{
+							f.delete();
+						}
 
 					if(allRowids.size() == 0)
 					{
@@ -635,6 +639,7 @@ public class DavisBasePrompt {
 								"rw");
 						BTree bTree = new BTree(indexFile);
 						bTree.insert(attributeToInsert.get(i), rowNo);
+                  indexFile.close();
 					}
 
 				}
@@ -860,11 +865,32 @@ public class DavisBasePrompt {
 			// if there is no condition, all the rows will be deleted.
 			// so just delete the existing index files on the table and create new ones
 			if (condition == null) {
-				// TODO delete exisitng index files for the table 
-				//and create new ones;
-				
+         String table_Name = tableName;
 
+					File f = new File("data/");
+		File[] matchingFiles = f.listFiles(new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				return name.startsWith(table_Name) && name.endsWith("ndx");
+			}
+		});
+		
+		for (File file1 : matchingFiles) {
+			if(!file1.delete())
+         {
+         
+         }
+			
+		}
+      for (int i = 0; i < metaData.columnNameAttrs.size(); i++) {
+					if (metaData.columnNameAttrs.get(i).hasIndex) {
 
+      	RandomAccessFile indexFile = new RandomAccessFile(getNDXFilePath(tableName, metaData.columnNameAttrs.get(i).columnName),
+								"rw");
+						Page.addNewPage(indexFile, PageType.LEAFINDEX, -1, -1);
+                   indexFile.close();
+
+                  }
+                 }
 
 			} else {
 				for (int i = 0; i < metaData.columnNameAttrs.size(); i++) {
@@ -874,6 +900,7 @@ public class DavisBasePrompt {
 						for (TableRecord record : deletedRecords) {
 							bTree.delete(record.getAttributes().get(i),record.rowId);
 						}
+                  indexFile.close();
 					}
 				}
 			}
