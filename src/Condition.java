@@ -37,16 +37,16 @@ public class Condition {
         }
     }
 
-    public static int compare(String value1, String value2, DataType dataType) {
-        if (dataType == DataType.TEXT)
+    public static int compare(String value1, String value2, DataType dType) {
+        if (dType == DataType.TEXT)
             return value1.toLowerCase().compareTo(value2);
-        else if (dataType == DataType.NULL) {
-            if (value1 == value2)
+        else if (dType == DataType.NULL) {
+            if (value1.equals(value2))
                 return 0;
             else if (value1.toLowerCase().equals("null"))
-                return 1;
-            else
                 return -1;
+            else
+                return 1;
         } else {
             return Long.valueOf(Long.parseLong(value1) - Long.parseLong(value2)).intValue();
         }
