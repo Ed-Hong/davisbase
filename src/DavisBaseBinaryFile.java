@@ -90,7 +90,9 @@ public class DavisBaseBinaryFile {
       }
 
       BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo,tablemetaData.tableName);
-   
+      
+            List<Integer> updateRowids = new ArrayList<Integer>();
+      int conditionalColumnIndex = -1;
       for(Integer pageNo :  bPlusOneTree.getAllLeaves(condition))
       {
             short deleteCountPerPage = 0;
@@ -102,7 +104,10 @@ public class DavisBaseBinaryFile {
                   if(!condition.checkCondition(record.getAttributes().get(condition.columnOrdinal).fieldValue))
                      continue;
                }
-               count++;
+               if(!updateRowids.contains(record.rowId))
+                 count++;
+                 
+                
                for(int i :newValueMap.keySet())
                {
                   Attribute oldValue = record.getAttributes().get(i);
@@ -115,7 +120,9 @@ public class DavisBaseBinaryFile {
                   }
                   else{
                    //Delete the record and insert a new one, update indexes
-                     
+                     if(condition!=null)
+                          conditionalColumnIndex = condition.columnOrdinal;
+                          
                      page.DeleteTableRecord(tablemetaData.tableName ,
                      Integer.valueOf(record.pageHeaderIndex - deleteCountPerPage).shortValue());
                      deleteCountPerPage++;
@@ -124,14 +131,26 @@ public class DavisBaseBinaryFile {
                      attrs.remove(i);
                      attr = newValueMap.get(i);
                      attrs.add(i, attr);
-                    rowId =  page.addTableRow(tablemetaData.tableName , attrs);
+                     int pageNoToinsert = BPlusOneTree.getPageNoForInsert(file,tablemetaData.rootPageNo);
+                     Page pageToInsert = new Page(file,pageNoToinsert);
+                     rowId =  pageToInsert.addTableRow(tablemetaData.tableName , attrs);
+                     updateRowids.add(rowId);
                 }
                 
-                if(tablemetaData.columnNameAttrs.get(i).hasIndex && condition!=null){
+                if(tablemetaData.columnNameAttrs.get(i).hasIndex && condition!=null
+                   ){
                   RandomAccessFile indexFile = new RandomAccessFile(DavisBasePrompt.getNDXFilePath(tablemetaData.columnNameAttrs.get(i).tableName, tablemetaData.columnNameAttrs.get(i).columnName), "rw");
                   BTree bTree = new BTree(indexFile);
                   bTree.delete(oldValue,record.rowId);
                   bTree.insert(newValueMap.get(i), rowId);
+                  indexFile.close();
+                }
+                if(conditionalColumnIndex !=-1)
+                {
+                  RandomAccessFile indexFile = new RandomAccessFile(DavisBasePrompt.getNDXFilePath(tablemetaData.columnNameAttrs.get(conditionalColumnIndex).tableName, tablemetaData.columnNameAttrs.get(conditionalColumnIndex).columnName), "rw");
+                  BTree bTree = new BTree(indexFile);
+                  bTree.delete(record.getAttributes().get(conditionalColumnIndex),record.rowId);
+                  bTree.insert(record.getAttributes().get(conditionalColumnIndex), rowId);
                   indexFile.close();
                 }
                 

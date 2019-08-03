@@ -10,8 +10,8 @@
 show rowid;
 
 drop table test;
-//create table test(id int primary key, name text);
-create table test(id int, name text);
+create table test(id int primary key, name text);
+//create table test(id int, name text);
 
 insert into test (id, name) values (50, hello world);
 insert into test (id, name) values (10, hello world);
