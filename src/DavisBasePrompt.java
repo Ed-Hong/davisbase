@@ -18,7 +18,7 @@ import static java.lang.System.out;
 public class DavisBasePrompt {
 
 	static String prompt = "sqverylite> ";
-	static String version = "v1.0";
+	static String version = "v2.0";
 	static String copyright = "Team Yellow";
 
 	static boolean isExit = false;
@@ -116,20 +116,30 @@ public class DavisBasePrompt {
 		out.println("SHOW TABLES;");
 		out.println("\tDisplay the names of all tables.\n");
 
-		out.println("CREATE TABLE <table_name> (<column_name> <data_type> <not_null> <unique>);");
+		out.println("SHOW ROWID;");
+		out.println("\tDisplays rowid when querying from a table.\n");
+
+		out.println("CREATE TABLE <table_name> (<column_name> <data_type> <primary key> <not null> <unique>, ...);");
+		out.println("\tCreates a table with the given columns.\n");
+
+		out.println("CREATE INDEX ON <table_name> (<column_name>);");
 		out.println("\tCreates a table with the given columns.\n");
 
 		out.println("DROP TABLE <table_name>;");
-		out.println("\tRemove table data (i.e. all records) and its schema.\n");
+		out.println("\tRemoves table data (i.e. all records) and its schema as well as any indexes.\n");
 
-		out.println("UPDATE TABLE <table_name> SET <column_name> = <value> [WHERE <condition>];");
+		out.println("UPDATE TABLE <table_name> SET <column_name> = <value> WHERE <condition>;");
 		out.println("\tModify records data whose optional <condition>");
 		out.println("\tis <column_name> = <value>.\n");
 
 		out.println("INSERT INTO <table_name> (<column_list>) VALUES (<values_list>);");
 		out.println("\tInserts a new record into the table with the given values for the given columns.\n");
 
-		out.println("SELECT <column_list> FROM <table_name> [WHERE <condition>];");
+		out.println("DELETE FROM TABLE <table_name> WHERE <condition>;");
+		out.println("\tDelete table records whose optional <condition>");
+		out.println("\tis <column_name> = <value>.\n");
+
+		out.println("SELECT <column_list> FROM <table_name> WHERE <condition>;");
 		out.println("\tDisplay table records whose optional <condition>");
 		out.println("\tis <column_name> = <value>.\n");
 
@@ -301,9 +311,6 @@ public class DavisBasePrompt {
 	 * @param dropTableString is a String of the user input
 	 */
 	public static void dropTable(String dropTableString) {
-		System.out.println("STUB: This is the dropTable method.");
-		System.out.println("\tParsing the string:\"" + dropTableString + "\"");
-		
 		String[] tokens = dropTableString.split(" ");
 		if(!(tokens[0].trim().equalsIgnoreCase("DROP") && tokens[1].trim().equalsIgnoreCase("TABLE"))) {
 			System.out.println("Error");
@@ -318,8 +325,8 @@ public class DavisBasePrompt {
 		parseDelete("delete from table "+ DavisBaseBinaryFile.columnsTable + " where table_name = '"+tableName+"' ");
 		File tableFile = new File("data/"+tableName+".tbl");
         if(tableFile.delete()){
-            System.out.println("table deleted");
-		}else System.out.println("table doesn't exist");
+            System.out.println("* Dropped " + tableName);
+		}else System.out.println("! Table doesn't exist");
 		
 		
 		File f = new File("data/");
@@ -332,19 +339,10 @@ public class DavisBasePrompt {
 		for (File file : matchingFiles) {
 			if(file.delete()){
 				iFlag = true;
-				System.out.println("index deleted");
 			}
 		}
 		if(iFlag)
-			System.out.println("drop "+tableName);
-		else
-			System.out.println("index doesn't exist");
-		
-		
-
-		
-		
-		//page.DeleteTableRecord(dropTableTokens.get(1) ,record.pageHeaderIndex);
+			System.out.println("* Dropped indexes");		
 	}
 
 	/**
