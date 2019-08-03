@@ -905,11 +905,11 @@ public class DavisBasePrompt {
 
 			System.out.println();
 			tableFile.close();
-			System.out.println(count + " record(s) deleted!");
+			System.out.println("* "+ count + " record(s) deleted!");
 
 		} catch (Exception e) {
 			System.out.println("! Error on deleting rows in table : " + tableName);
-			System.out.println(e.getMessage());
+			//System.out.println(e.getMessage());
 		}
 
 	}

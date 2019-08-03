@@ -202,6 +202,7 @@ public class DavisBaseBinaryFile {
    BPlusOneTree bPlusOneTree = new BPlusOneTree(file, tablemetaData.rootPageNo,tablemetaData.tableName);
   
    String currentValue ="";
+   int count = 0;
    for(Integer pageNo : bPlusOneTree.getAllLeaves(condition))
    {
          Page page = new Page(file,pageNo);
@@ -226,11 +227,11 @@ public class DavisBaseBinaryFile {
                System.out.print(DavisBasePrompt.line(" ",printPosition.get(++columnCount) - currentValue.length()));
             }
             System.out.println();
+            count++;
          }
    }
-   
    System.out.println();
-
+   System.out.println("* " + count + " records retrieved.");
    }
        
 
