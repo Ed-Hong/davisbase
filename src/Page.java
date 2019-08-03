@@ -692,7 +692,7 @@ if(refreshTableRecords)
       rowIds.addAll(incomingInsert.rowids);
       incomingInsert.rowids = rowIds;
       DeletePageRecord(indexValuePointer.get(node.indexValue.fieldValue).pageHeaderIndex);
-      if(indexValueDataType == DataType.TEXT || indexValueDataType == null)
+      if(indexValueDataType == DataType.TEXT || indexValueDataType == null || node.indexValue.fieldValue.toUpperCase().equals("NULL"))
         sIndexValues.remove(node.indexValue.fieldValue);
       else
         lIndexValues.remove(Long.parseLong(node.indexValue.fieldValue));
@@ -855,7 +855,7 @@ private void fillIndexRecords(){
       IndexRecord record = new IndexRecord(i, DataType.get(dataType),noOfRowIds, indexValue
                                         , lstRowIds,leftPageNo,rightPage,pageNo,cellStart);
       
-      if(indexValueDataType == DataType.TEXT || indexValueDataType == null)
+      if(indexValueDataType == DataType.TEXT || indexValueDataType == null || record.getIndexNode().indexValue.fieldValue.toUpperCase().equals("NULL"))
         sIndexValues.add(record.getIndexNode().indexValue.fieldValue);
       else
         lIndexValues.add(Long.parseLong(record.getIndexNode().indexValue.fieldValue));
