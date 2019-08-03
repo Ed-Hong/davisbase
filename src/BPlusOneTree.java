@@ -83,15 +83,14 @@ public class BPlusOneTree {
                 hash_Set.add(getPageNo(rowId, new Page(binaryFile, rootPageNo)));
             }
 
-            // TODO remove later, print the rowids from index search
-            System.out.print(" count : " + rowIds.size() + " ---> ");
-            for (int rowId : rowIds) {
-                System.out.print(" " + rowId + " ");
-            }
-
-            System.out.println();
-            System.out.println(" leaves: " + hash_Set);
-            System.out.println();
+            // DEBUG: print the rowids from index search
+            // System.out.print(" count : " + rowIds.size() + " ---> ");
+            // for (int rowId : rowIds) {
+            //     System.out.print(" " + rowId + " ");
+            // }
+            // System.out.println();
+            // System.out.println(" leaves: " + hash_Set);
+            // System.out.println();
 
             indexFile.close();
 
