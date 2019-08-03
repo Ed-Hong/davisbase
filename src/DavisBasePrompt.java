@@ -143,7 +143,7 @@ public class DavisBasePrompt {
 		out.println("\tDisplay table records whose optional <condition>");
 		out.println("\tis <column_name> = <value>.\n");
 
-		out.println("SOURCE filename;");
+		out.println("SOURCE <filename>;");
 		out.println("\tProcess a batch file of commands.\n");
 
 		out.println("VERSION;");
