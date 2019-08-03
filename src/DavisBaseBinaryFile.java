@@ -107,7 +107,7 @@ public class DavisBaseBinaryFile {
                if(!updateRowids.contains(record.rowId))
                  count++;
                  
-                
+                List<Attribute> attrs = record.getAttributes();
                for(int i :newValueMap.keySet())
                {
                   Attribute oldValue = record.getAttributes().get(i);
@@ -117,6 +117,10 @@ public class DavisBaseBinaryFile {
                      || (record.getAttributes().get(i).dataType != DataType.NULL && record.getAttributes().get(i).dataType != DataType.TEXT)
                   ){
                      page.updateRecord(record,i,newValueMap.get(i).fieldValueByte);
+                     Attribute attr = attrs.get(i);
+                     attrs.remove(i);
+                     attr = newValueMap.get(i);
+                     attrs.add(i, attr);
                   }
                   else{
                    //Delete the record and insert a new one, update indexes
@@ -126,7 +130,7 @@ public class DavisBaseBinaryFile {
                      page.DeleteTableRecord(tablemetaData.tableName ,
                      Integer.valueOf(record.pageHeaderIndex - deleteCountPerPage).shortValue());
                      deleteCountPerPage++;
-                     List<Attribute> attrs = record.getAttributes();
+                     
                      Attribute attr = attrs.get(i);
                      attrs.remove(i);
                      attr = newValueMap.get(i);
